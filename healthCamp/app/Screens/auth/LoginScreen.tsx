@@ -1,20 +1,21 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
-export default function AuthScreen() {
-  const [isLogin, setIsLogin] = useState(true); // Toggle state
+export default function LoginScreen() {
+  const router = useRouter(); // Initialize router
+  const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Handle Register
   const handleRegister = async () => {
     if (!name || !email || !password) {
       Alert.alert('Error', 'All fields are required!');
       return;
     }
-    
+
     if (!/\S+@\S+\.\S+/.test(email)) {
       Alert.alert('Error', 'Invalid email format!');
       return;
@@ -28,16 +29,16 @@ export default function AuthScreen() {
     const user = { name, email, password };
     await AsyncStorage.setItem('user', JSON.stringify(user));
     Alert.alert('Success', 'Registration Successful! Please login.');
-    setIsLogin(true); // Switch to Login mode
+    setIsLogin(true);
   };
 
-  // Handle Login
   const handleLogin = async () => {
     const storedUser = await AsyncStorage.getItem('user');
     if (storedUser) {
       const { email: storedEmail, password: storedPassword } = JSON.parse(storedUser);
       if (email === storedEmail && password === storedPassword) {
         Alert.alert('Login Successful', 'Welcome back!');
+        router.push('/Screens/HomeScreen'); // Navigate to HomeScreen
       } else {
         Alert.alert('Error', 'Invalid email or password');
       }
