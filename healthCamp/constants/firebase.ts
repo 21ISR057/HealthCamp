@@ -5,12 +5,12 @@ import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   // Your Firebase config
-  apiKey: "AIzaSyArEvpQsgjftRpzsP0U9CcawgHupdq6VNU",
-  authDomain: "healthcamp-486b0.firebaseapp.com",
-  projectId: "healthcamp-486b0",
-  storageBucket: "healthcamp-486b0.firebasestorage.app",
-  messagingSenderId: "609831444363",
-  appId: "1:609831444363:android:130cbcacbf8dfcf2a8198e"
+  apiKey: "AIzaSyBvP7ggFVlcm4r4IarEuKR5jQTQXT_sNXc",
+  authDomain: "healthcamp-8cef2.firebaseapp.com",
+  projectId: "healthcamp-8cef2",
+  storageBucket: "healthcamp-8cef2.appspot.com",
+  messagingSenderId: "423302573314",
+  appId: "1:423302573314:android:23c41de15aba38cb4de61bs"
 };
 
 const app = initializeApp(firebaseConfig);
