@@ -21,20 +21,25 @@ export default function RoleSelectionScreen() {
   }, []);
 
   const handleContinue = () => {
-    if (selectedRole === 'admin' && !category) return;
-
-    // Determine the navigation path
-    const path =
-    selectedRole === 'user'
-      ? '/Screens/auth/LoginScreen' // Make sure this path exists in your project
-      : '/Screens/auth/AdminLogin'; 
-    // Navigate with query parameters
-    router.push({
-      pathname: path,
-      params: category ? { category } : {}, // Ensure params are correctly structured
-    });
+    let path = '';
+  
+    if (selectedRole === 'user') {
+      path = '/Screens/auth/RegisterScreenUser';
+    } else if (selectedRole === 'admin') {
+      if (category === 'ngo') {
+        path = '/Screens/auth/RegisterAdmin';
+      } else if (category === 'healthStudent') {
+        path = '/Screens/auth/AdminHealthRegister';
+      } else {
+        return; // Ensure category is selected before navigating
+      }
+    }
+  
+    if (path) {
+      router.push(path as any); // Navigate to the selected path
+    }
   };
-
+  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('selectRole')}</Text>
