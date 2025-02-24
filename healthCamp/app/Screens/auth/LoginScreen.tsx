@@ -22,7 +22,7 @@ export default function LoginScreen() {
       await signInWithEmailAndPassword(auth, email, password);
 
       Alert.alert("Success", "Login Successful!");
-      router.push("/Screens/auth/Dashboard"); // ✅ Redirect to Dashboard after login
+      router.push('../HomeScreen'); // ✅ Redirect to Dashboard after login
     } catch (error:any) {
       console.error("Login error:", error.message);
       Alert.alert("Error", "Invalid email or password!");
@@ -33,27 +33,27 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Email" 
-        keyboardType="email-address" 
-        value={email} 
-        onChangeText={setEmail} 
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
       />
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Password" 
-        secureTextEntry 
-        value={password} 
-        onChangeText={setPassword} 
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/Screens/auth/RegisterScreenUser")}>
+      <TouchableOpacity onPress={() => router.push("../Screens/auth/RegisterScreenUser")}>
         <Text style={styles.toggleText}>Don't have an account? Register</Text>
       </TouchableOpacity>
     </View>
