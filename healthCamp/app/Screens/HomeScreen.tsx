@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Linking, Share } from "react-native";
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Linking, Share, TextInput } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
 
@@ -17,6 +17,7 @@ interface Post {
 const HomeScreen = () => {
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const [posts] = useState<Post[]>([
     {
       id: "1",
@@ -58,10 +59,23 @@ const HomeScreen = () => {
     }
   };
 
+  // Filter posts based on search query
+  const filteredPosts = posts.filter((post) =>
+    post.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <View style={styles.container}>
+      {/* Search Bar */}
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search by name or location"
+        value={searchQuery}
+        onChangeText={setSearchQuery}
+      />
       <FlatList
-        data={posts}
+        data={filteredPosts}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.postContainer}>
@@ -71,33 +85,42 @@ const HomeScreen = () => {
             <Text style={styles.postLocation}>📍 {item.location}</Text>
             <View style={styles.iconContainer}>
               <TouchableOpacity onPress={() => toggleLike(item.id)}>
-                <AntDesign name={likedPosts[item.id] ? "heart" : "hearto"} size={20} color={likedPosts[item.id] ? "red" : "gray"} />
+                <AntDesign
+                  name={likedPosts[item.id] ? "heart" : "hearto"}
+                  size={20}
+                  color={likedPosts[item.id] ? "red" : "gray"}
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleShare(item.registrationLink)}>
                 <FontAwesome name="share" size={20} color="black" />
               </TouchableOpacity>
             </View>
             <View style={styles.buttonContainer}>
-              <TouchableOpacity onPress={() => handleRegister(item.registrationLink)} style={styles.registerButton}>
+              <TouchableOpacity
+                onPress={() => handleRegister(item.registrationLink)}
+                style={styles.registerButton}
+              >
                 <Text style={styles.registerButtonText}>Register</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.viewButton} 
-                onPress={() => router.push({
-                  pathname: "/camp-details",
-                  params: {
-                    campName: item.name,
-                    image: item.image,
-                    location: item.location,
-                    doctorName: "Dr. John Doe",
-                    doctorDetails: "Cardiologist, 10+ years of experience",
-                    medicalFacilities: JSON.stringify([
-                      "Blood Pressure Check", 
-                      "Diabetes Screening", 
-                      "Eye Test"
-                    ]),
-                  }
-                })}
+              <TouchableOpacity
+                style={styles.viewButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/camp-details",
+                    params: {
+                      campName: item.name,
+                      image: item.image,
+                      location: item.location,
+                      doctorName: "Dr. John Doe",
+                      doctorDetails: "Cardiologist, 10+ years of experience",
+                      medicalFacilities: JSON.stringify([
+                        "Blood Pressure Check",
+                        "Diabetes Screening",
+                        "Eye Test",
+                      ]),
+                    },
+                  })
+                }
               >
                 <Text style={styles.viewButtonText}>View</Text>
               </TouchableOpacity>
@@ -118,13 +141,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 10,
   },
+  searchBar: {
+    backgroundColor: "#FFF",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    fontSize: 16,
+    elevation: 2,
+  },
   postContainer: {
     backgroundColor: "#FFF",
     borderRadius: 10,
     marginBottom: 15,
     padding: 15,
     elevation: 3,
-    width: "45%", // Increased width for better spacing
+    width: "90%",
     alignSelf: "center",
   },
   postImage: {
@@ -140,7 +171,7 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   postLocation: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#000",
     marginBottom: 5,
@@ -181,7 +212,6 @@ const styles = StyleSheet.create({
   viewButtonText: {
     fontSize: 12,
     fontWeight: "bold",
-    alignItems: "center",
     color: "#FFF",
   },
 });
