@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
       justifyContent: "center", // Centers vertically
     },
     scrollView: {
-      width: "100%",
+      width: "1000%",
     },
     contentContainer: {
       width: "80%", // Ensures good responsiveness

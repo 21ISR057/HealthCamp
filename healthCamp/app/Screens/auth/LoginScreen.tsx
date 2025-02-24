@@ -10,41 +10,22 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Handle Register
-  const handleRegister = async () => {
-    if (!name || !email || !password) {
-      Alert.alert('Error', 'All fields are required!');
-      return;
-    }
-    
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      Alert.alert('Error', 'Invalid email format!');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters!');
-      return;
-    }
-
-    const user = { name, email, password };
-    await AsyncStorage.setItem('user', JSON.stringify(user));
-    Alert.alert('Success', 'Registration Successful! Please login.');
-    setIsLogin(true); // Switch to Login mode
-  };
-
-  // Handle Login
+  // 🔹 Handle Login Function
   const handleLogin = async () => {
-    const storedUser = await AsyncStorage.getItem('user');
-    if (storedUser) {
-      const { email: storedEmail, password: storedPassword } = JSON.parse(storedUser);
-      if (email === storedEmail && password === storedPassword) {
-        Alert.alert('Login Successful', 'Welcome back!');
-      } else {
-        Alert.alert('Error', 'Invalid email or password');
-      }
-    } else {
-      Alert.alert('Error', 'No user found. Please register.');
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter both email and password!");
+      return;
+    }
+
+    try {
+      // 🔹 Sign in User
+      await signInWithEmailAndPassword(auth, email, password);
+
+      Alert.alert("Success", "Login Successful!");
+      router.push('../HomeScreen'); // ✅ Redirect to Dashboard after login
+    } catch (error:any) {
+      console.error("Login error:", error.message);
+      Alert.alert("Error", "Invalid email or password!");
     }
   };
 
@@ -52,27 +33,27 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Login</Text>
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Email" 
-        keyboardType="email-address" 
-        value={email} 
-        onChangeText={setEmail} 
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
       />
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Password" 
-        secureTextEntry 
-        value={password} 
-        onChangeText={setPassword} 
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/Screens/auth/RegisterScreenUser")}>
+      <TouchableOpacity onPress={() => router.push("../Screens/auth/RegisterScreenUser")}>
         <Text style={styles.toggleText}>Don't have an account? Register</Text>
       </TouchableOpacity>
     </View>
