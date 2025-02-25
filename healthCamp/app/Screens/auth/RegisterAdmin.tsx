@@ -8,52 +8,19 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as DocumentPicker from "expo-document-picker";
-import { auth, db, storage } from "../../../constants/firebase";
+import { auth, db } from "../../../constants/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useRouter } from 'expo-router';
-export default function AdminRegister({ navigation }: any) {
+export default function AdminRegister() {
   const [ngoName, setNgoName] = useState("");
   const [ngoId, setNgoId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [certificate, setCertificate] = useState<{ uri: string } | null>(null);
-
   const router = useRouter();
-  // Pick Certificate
-  const pickCertificate = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "application/pdf",
-        multiple: false,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const fileUri = result.assets[0].uri;
-        setCertificate({ uri: fileUri });
-      }
-    } catch (error) {
-      Alert.alert("Error", "Could not pick a certificate.");
-    }
-  };
-
-  // Upload Certificate
-  const uploadCertificate = async (uid: string) => {
-    if (!certificate) return null;
-
-    const certificateRef = ref(storage, `certificates/${uid}.pdf`);
-    const response = await fetch(certificate.uri);
-    const blob = await response.blob();
-
-    await uploadBytes(certificateRef, blob);
-    return await getDownloadURL(certificateRef);
-  };
-
   // NGO Registration
   const handleRegister = async () => {
-    if (!ngoName || !ngoId || !email || !password || !certificate) {
+    if (!ngoName || !ngoId || !email || !password) {
       Alert.alert("Error", "All fields are required, including certificate!");
       return;
     }
@@ -65,14 +32,10 @@ export default function AdminRegister({ navigation }: any) {
         password
       );
       const user = userCredential.user;
-
-      const certificateURL = await uploadCertificate(user.uid);
-
       await setDoc(doc(db, "ngos", user.uid), {
         ngoName,
         ngoId,
         email,
-        certificateURL,
         role: "ngo_admin",
       });
 
@@ -96,11 +59,6 @@ export default function AdminRegister({ navigation }: any) {
       <TextInput style={styles.input} placeholder="NGO Unique ID" value={ngoId} onChangeText={setNgoId} />
       <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" value={email} onChangeText={setEmail} />
       <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
-
-      <TouchableOpacity style={styles.uploadButton} onPress={pickCertificate}>
-        <Text style={styles.uploadText}>{certificate ? "Certificate Selected" : "Upload Certificate (PDF)"}</Text>
-      </TouchableOpacity>
-
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
