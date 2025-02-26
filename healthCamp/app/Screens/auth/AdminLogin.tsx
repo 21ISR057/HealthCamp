@@ -28,7 +28,7 @@ export default function AdminLogin({ navigation }: any) {
       const user = userCredential.user;
 
       await AsyncStorage.setItem("admin", JSON.stringify({ uid: user.uid }));
-
+      router.push("/Screens/Admin/AdminPanel")
       Alert.alert("Login Successful", "Welcome!");
     } catch (error) {
       if (error instanceof Error) {

@@ -6,8 +6,7 @@ import { useRouter } from 'expo-router';
 
 export default function RoleSelectionScreen() {
   const router = useRouter(); 
-  const [selectedRole, setSelectedRole] = useState<'user' | 'admin' | null>(null);
-  const [category, setCategory] = useState<'ngo' | 'healthStudent' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'user' | 'ngo' | 'healthStudent' | null>(null);
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
@@ -22,29 +21,27 @@ export default function RoleSelectionScreen() {
 
   const handleContinue = () => {
     let path = '';
-  
+
     if (selectedRole === 'user') {
       path = '/Screens/auth/RegisterScreenUser';
-    } else if (selectedRole === 'admin') {
-      if (category === 'ngo') {
-        path = '/Screens/auth/RegisterAdmin';
-      } else if (category === 'healthStudent') {
-        path = '/Screens/auth/AdminHealthRegister';
-      } else {
-        return; // Ensure category is selected before navigating
-      }
+    } else if (selectedRole === 'ngo') {
+      path = '/Screens/auth/RegisterAdmin';
+    } else if (selectedRole === 'healthStudent') {
+      path = '/Screens/auth/AdminHealthRegister';
+    } else {
+      return; // Ensure a role is selected before navigating
     }
-  
+
     if (path) {
       router.push(path as any); // Navigate to the selected path
     }
   };
-  
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{t('selectRole')}</Text>
 
-      {/* Role Selection (User / Admin) */}
+      {/* Role Selection (User / NGO / Health Student) */}
       <View style={styles.selectionContainer}>
         <TouchableOpacity
           style={[styles.option, selectedRole === 'user' && styles.selectedOption]}
@@ -55,43 +52,30 @@ export default function RoleSelectionScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.option, selectedRole === 'admin' && styles.selectedOption]}
-          onPress={() => setSelectedRole('admin')}
+          style={[styles.option, selectedRole === 'ngo' && styles.selectedOption]}
+          onPress={() => setSelectedRole('ngo')}
         >
-          <Image source={require('../../../assets/images/admin.jpg')} style={styles.image} />
-          <Text style={styles.optionText}>{t('admin')}</Text>
+          <Image source={require('../../../assets/images/ngo.png')} style={styles.image} />
+          <Text style={styles.optionText}>{t('ngo')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.option, selectedRole === 'healthStudent' && styles.selectedOption]}
+          onPress={() => setSelectedRole('healthStudent')}
+        >
+          <Image source={require('../../../assets/images/health_student.jpeg')} style={styles.image} />
+          <Text style={styles.optionText}>{t('health_student')}</Text>
         </TouchableOpacity>
       </View>
-
-      {/* Category Selection (Only if Admin is selected) */}
-      {selectedRole === 'admin' && (
-        <View style={styles.selectionContainer}>
-          <TouchableOpacity
-            style={[styles.option, category === 'ngo' && styles.selectedOption]}
-            onPress={() => setCategory('ngo')}
-          >
-            <Image source={require('../../../assets/images/ngo.png')} style={styles.image} />
-            <Text style={styles.optionText}>{t('ngo')}</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.option, category === 'healthStudent' && styles.selectedOption]}
-            onPress={() => setCategory('healthStudent')}
-          >
-            <Image source={require('../../../assets/images/health_student.jpeg')} style={styles.image} />
-            <Text style={styles.optionText}>{t('health_student')}</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Continue Button */}
       <TouchableOpacity
         style={[
           styles.continueButton,
-          (!selectedRole || (selectedRole === 'admin' && !category)) && styles.disabledButton,
+          !selectedRole && styles.disabledButton,
         ]}
         onPress={handleContinue}
-        disabled={!selectedRole || (selectedRole === 'admin' && !category)}
+        disabled={!selectedRole}
       >
         <Text style={styles.continueButtonText}>{t('continue')}</Text>
       </TouchableOpacity>
