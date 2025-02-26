@@ -110,8 +110,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8F9FA",
-    paddingHorizontal: 10,
-    paddingTop: 10,
+    paddingHorizontal: 20,
+    paddingTop: 20,
   },
   profileIcon: {
     position: "absolute",
@@ -120,12 +120,13 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   postContainer: {
+
     backgroundColor: "#FFF",
     borderRadius: 10,
     marginBottom: 15,
     padding: 15,
     elevation: 3,
-    width: "45%",
+    width: "95%",
     alignSelf: "center",
   },
   postImage: {
