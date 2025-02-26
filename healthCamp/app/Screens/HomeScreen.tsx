@@ -1,23 +1,12 @@
 import React, { useState } from "react";
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Linking, Share } from "react-native";
 import { useRouter } from "expo-router";
-import { AntDesign, FontAwesome } from "@expo/vector-icons";
-
-interface Post {
-  id: string;
-  image: string;
-  name: string;
-  description: string;
-  location: string;
-  date: string;
-  time: string;
-  registrationLink: string;
-}
+import { AntDesign, FontAwesome, Ionicons } from "@expo/vector-icons";
 
 const HomeScreen = () => {
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
-  const [posts] = useState<Post[]>([
+  const [posts] = useState([
     {
       id: "1",
       image: "https://www.sulabhpublicschool.com/wp-content/uploads/2024/09/health.jpeg",
@@ -60,6 +49,12 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Profile Icon */}
+      <TouchableOpacity style={styles.profileIcon} onPress={() => router.push("/Screens/UserProfile")}>
+  <Ionicons name="person-circle-outline" size={30} color="black" />
+</TouchableOpacity>
+
+
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -118,13 +113,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 10,
   },
+  profileIcon: {
+    position: "absolute",
+    top: 10,
+    right: 15,
+    zIndex: 10,
+  },
   postContainer: {
     backgroundColor: "#FFF",
     borderRadius: 10,
     marginBottom: 15,
     padding: 15,
     elevation: 3,
-    width: "45%", // Increased width for better spacing
+    width: "45%",
     alignSelf: "center",
   },
   postImage: {
