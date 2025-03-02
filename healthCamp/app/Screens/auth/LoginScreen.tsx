@@ -22,7 +22,7 @@ export default function LoginScreen() {
       await signInWithEmailAndPassword(auth, email, password);
 
       Alert.alert("Success", "Login Successful!");
-      router.push('../HomeScreen'); // ✅ Redirect to Dashboard after login
+      router.push('../Emergency/NearbyEmergency'); // ✅ Redirect to Dashboard after login
     } catch (error:any) {
       console.error("Login error:", error.message);
       Alert.alert("Error", "Invalid email or password!");
