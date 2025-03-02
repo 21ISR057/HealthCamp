@@ -1,64 +1,134 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+import React, { useState, useEffect } from "react";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert 
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "../../../constants/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { useRouter } from 'expo-router';
-export default function AdminRegister() {
-  const [ngoName, setNgoName] = useState("");
-  const [ngoId, setNgoId] = useState("");
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useRouter } from "expo-router";
+
+export default function Register() {
+  const [role, setRole] = useState<string | null>(null); // Role from previous screen
+  const [subRole, setSubRole] = useState("ngo_admin"); // Default sub-role
+  const [name, setName] = useState("");
+  const [uniqueId, setUniqueId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
-  // NGO Registration
+
+  // Fetch role from AsyncStorage when the component loads
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const storedRole = await AsyncStorage.getItem("selectedRole");
+        console.log("Fetched Role:", storedRole); // Debugging
+        if (storedRole) {
+          setRole(storedRole);
+        } else {
+          console.warn("No role found in AsyncStorage");
+        }
+      } catch (error) {
+        console.error("Error fetching role:", error);
+      }
+    };
+    fetchRole();
+  }, []);
+
   const handleRegister = async () => {
-    if (!ngoName || !ngoId || !email || !password) {
-      Alert.alert("Error", "All fields are required, including certificate!");
+    if (!name || !email || !password || (role === "admin" && !uniqueId)) {
+      Alert.alert("Error", "All fields are required!");
       return;
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      await setDoc(doc(db, "ngos", user.uid), {
-        ngoName,
-        ngoId,
-        email,
-        role: "ngo_admin",
-      });
 
-      await AsyncStorage.setItem(
-        "admin",
-        JSON.stringify({ uid: user.uid, ngoName, ngoId, role: "ngo_admin" })
-      );
+      let userData = {
+        uid: user.uid,
+        name,
+        uniqueId,
+        email,
+        role: role,
+        subRole: role, // This was incorrectly set; now properly using subRole
+        createdAt: serverTimestamp(),
+      };
+
+      let collectionName = "users"; // Default collection
+
+      if (role === "admin") {
+        userData = { ...userData, uniqueId, subRole };
+        collectionName = subRole === "ngo_admin" ? "ngos" : "students";
+      }
+
+      await setDoc(doc(db, collectionName, user.uid), userData);
+      await AsyncStorage.setItem("user", JSON.stringify(userData));
 
       Alert.alert("Success", "Registration Successful! Please login.");
       router.push("/Screens/auth/AdminLogin");
     } catch (error) {
+      console.error("Registration Error:", error);
       Alert.alert("Error", "Registration failed. Please try again.");
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>NGO Registration</Text>
+      <Text style={styles.title}>Admin Registration</Text>
 
-      <TextInput style={styles.input} placeholder="NGO Name" value={ngoName} onChangeText={setNgoName} />
-      <TextInput style={styles.input} placeholder="NGO Unique ID" value={ngoId} onChangeText={setNgoId} />
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" value={email} onChangeText={setEmail} />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+      {role === "admin" && (
+        <>
+          <Text style={styles.label}>Select Admin Role</Text>
+          <Picker 
+            selectedValue={subRole} 
+            onValueChange={(itemValue) => setSubRole(itemValue)} 
+            style={styles.picker}
+          >
+            <Picker.Item label="NGO Admin" value="ngo_admin" />
+            <Picker.Item label="Health Student" value="health_student" />
+          </Picker>
+        </>
+      )}
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Full Name" 
+        value={name} 
+        onChangeText={setName} 
+      />
+
+      {role === "admin" && (
+        <TextInput
+          style={styles.input}
+          placeholder={subRole === "ngo_admin" ? "NGO Unique ID" : "Student ID"}
+          value={uniqueId}
+          onChangeText={setUniqueId}
+        />
+      )}
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Email" 
+        keyboardType="email-address" 
+        value={email} 
+        onChangeText={setEmail} 
+      />
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Password" 
+        secureTextEntry 
+        value={password} 
+        onChangeText={setPassword} 
+      />
+
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
@@ -70,55 +140,59 @@ export default function AdminRegister() {
   );
 }
 
-// Styles remain the same as in your original file
+// Styles
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: "bold",
-      marginBottom: 20,
-    },
-    input: {
-      width: "90%",
-      padding: 12,
-      borderWidth: 1,
-      borderRadius: 10,
-      marginBottom: 12,
-    },
-    button: {
-      backgroundColor: "#007BFF",
-      padding: 14,
-      width: "90%",
-      alignItems: "center",
-      borderRadius: 10,
-    },
-    buttonText: {
-      fontSize: 18,
-      color: "#FFF",
-      fontWeight: "bold",
-    },
-    toggleText: {
-      fontSize: 16,
-      color: "#007BFF",
-      marginTop: 10,
-    },
-    uploadButton: {
-      backgroundColor: "#28a745",
-      padding: 12,
-      borderRadius: 10,
-      width: "90%",
-      alignItems: "center",
-      marginTop: 10,
-    },
-    uploadText: {
-      fontSize: 16,
-      color: "#FFF",
-      fontWeight: "bold",
-    },
-  });
-  
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#f5f5f5",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    color: "#333",
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  picker: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#fff",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  button: {
+    width: "100%",
+    height: 50,
+    backgroundColor: "#007BFF",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  toggleText: {
+    marginTop: 15,
+    color: "#007BFF",
+  },
+});
