@@ -3,9 +3,10 @@ import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
+
 export default function RoleSelectionScreen() {
-  const router = useRouter();
-  const [selectedRole, setSelectedRole] = useState<'user' | 'admin' | null>(null);
+  const router = useRouter(); 
+  const [selectedRole, setSelectedRole] = useState<'user' | 'ngo' | 'healthStudent' | null>(null);
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
@@ -18,35 +19,21 @@ export default function RoleSelectionScreen() {
     loadLanguage();
   }, []);
 
-  // ✅ Store role in AsyncStorage when selected
-  const handleRoleSelection = async (role: 'user' | 'admin') => {
-    try {
-      setSelectedRole(role);
-      await AsyncStorage.setItem('selectedRole', role); // Save role
-      console.log("Saved Role:", role); // Debugging
-    } catch (error) {
-      console.error("Error saving role:", error);
+  const handleContinue = () => {
+    let path = '';
+
+    if (selectedRole === 'user') {
+      path = '/Screens/auth/RegisterScreenUser';
+    } else if (selectedRole === 'ngo') {
+      path = '/Screens/auth/RegisterAdmin';
+    } else if (selectedRole === 'healthStudent') {
+      path = '/Screens/auth/AdminHealthRegister';
+    } else {
+      return; // Ensure a role is selected before navigating
     }
-  };
 
-  const handleContinue = async () => {
-    try {
-      const storedRole = await AsyncStorage.getItem('selectedRole');
-      console.log("Fetched Role from AsyncStorage:", storedRole); // Debugging
-
-      let path = '';
-
-      if (storedRole === 'user') {
-        path = '/Screens/auth/RegisterScreenUser';
-      } else if (storedRole === 'admin') {
-        path ='/Screens/auth/RegisterAdmin' ;
-      }
-
-      if (path) {
-        router.push(path as any);
-      }
-    } catch (error) {
-      console.error("Error retrieving role:", error);
+    if (path) {
+      router.push(path as any); // Navigate to the selected path
     }
   };
 
@@ -54,21 +41,30 @@ export default function RoleSelectionScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>{t('selectRole')}</Text>
 
-      {/* Role Selection (User / Admin) */}
+      {/* Role Selection (User / NGO / Health Student) */}
       <View style={styles.selectionContainer}>
         <TouchableOpacity
           style={[styles.option, selectedRole === 'user' && styles.selectedOption]}
-          onPress={() => handleRoleSelection('user')} // ✅ Now saves role
+          onPress={() => setSelectedRole('user')}
         >
           <Image source={require('../../../assets/images/user.png')} style={styles.image} />
           <Text style={styles.optionText}>{t('user')}</Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.option, selectedRole === 'admin' && styles.selectedOption]}
-          onPress={() => handleRoleSelection('admin')} // ✅ Now saves role
+          style={[styles.option, selectedRole === 'ngo' && styles.selectedOption]}
+          onPress={() => setSelectedRole('ngo')}
         >
-          <Image source={require('../../../assets/images/admin.jpg')} style={styles.image} />
-          <Text style={styles.optionText}>{t('admin')}</Text>
+          <Image source={require('../../../assets/images/ngo.png')} style={styles.image} />
+          <Text style={styles.optionText}>{t('ngo')}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.option, selectedRole === 'healthStudent' && styles.selectedOption]}
+          onPress={() => setSelectedRole('healthStudent')}
+        >
+          <Image source={require('../../../assets/images/health_student.jpeg')} style={styles.image} />
+          <Text style={styles.optionText}>{t('health_student')}</Text>
         </TouchableOpacity>
       </View>
 
