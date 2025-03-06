@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Linking, Share } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign, FontAwesome, Ionicons } from "@expo/vector-icons";
+import Navbar from "../../components/Navbar";
+
 
 const HomeScreen = () => {
   const router = useRouter();
@@ -48,13 +50,11 @@ const HomeScreen = () => {
   };
 
   return (
+    
     <View style={styles.container}>
-      {/* Profile Icon */}
-      <TouchableOpacity style={styles.profileIcon} onPress={() => router.push("/Screens/UserProfile")}>
-  <Ionicons name="person-circle-outline" size={30} color="black" />
-</TouchableOpacity>
-
-
+      {/* Navbar */}
+      
+      <Navbar />
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -112,15 +112,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FA",
     paddingHorizontal: 20,
     paddingTop: 20,
+    zIndex: 1, // Ensures content stays below navbar
   },
-  profileIcon: {
-    position: "absolute",
-    top: 10,
-    right: 15,
-    zIndex: 10,
+  navbar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: "#fff",
+    elevation: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+    width: "100%",
+    marginBottom: 10,
+  },
+  navTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
   },
   postContainer: {
-
     backgroundColor: "#FFF",
     borderRadius: 10,
     marginBottom: 15,
@@ -187,3 +199,4 @@ const styles = StyleSheet.create({
     color: "#FFF",
   },
 });
+
