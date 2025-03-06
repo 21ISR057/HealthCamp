@@ -20,7 +20,6 @@ export default function LoginScreen() {
     try {
       // 🔹 Sign in User
       await signInWithEmailAndPassword(auth, email, password);
-
       Alert.alert("Success", "Login Successful!");
       router.push('../Emergency/NearbyEmergency'); // ✅ Redirect to Dashboard after login
     } catch (error:any) {
