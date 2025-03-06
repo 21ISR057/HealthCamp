@@ -54,7 +54,7 @@ const IndexScreen = () => {
 
       <Text style={styles.selectedLang}>{t('selected_language')}: {selectedLanguage.toUpperCase()}</Text>
 
-      <Button title="Go to Admin NOC Upload" onPress={() => router.push('/Screens/AdminNocUpload')} color="#007BFF" />
+      {/* <Button title="Go to Admin NOC Upload" onPress={() => router.push('/Screens/AdminNocUpload')} color="#007BFF" /> */}
     </View>
   );
 };
