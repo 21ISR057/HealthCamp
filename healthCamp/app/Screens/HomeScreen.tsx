@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Linking, Share } from "react-native";
 import { useRouter } from "expo-router";
-import { AntDesign, FontAwesome, Ionicons } from "@expo/vector-icons";
+import { AntDesign, FontAwesome } from "@expo/vector-icons";
+import Navbar from "../../components/Navbar";
 
 const HomeScreen = () => {
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
+
   const [posts] = useState([
     {
       id: "1",
@@ -40,7 +42,7 @@ const HomeScreen = () => {
   const handleShare = async (link: string) => {
     try {
       await Share.share({
-        message: `Check out this free health camp: ${link}`,
+        message: `Check out this free health camp: ${link}`, // ✅ Fixed template string
       });
     } catch (error) {
       console.error("Error sharing:", error);
@@ -49,12 +51,9 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Profile Icon */}
-      <TouchableOpacity style={styles.profileIcon} onPress={() => router.push("/Screens/UserProfile")}>
-  <Ionicons name="person-circle-outline" size={30} color="black" />
-</TouchableOpacity>
-
-
+      {/* Navbar */}
+      <Navbar />
+      
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -64,18 +63,25 @@ const HomeScreen = () => {
             <Text style={styles.postText}> {item.name}</Text>
             <Text style={styles.postText}>📝 {item.description}</Text>
             <Text style={styles.postLocation}>📍 {item.location}</Text>
+            
             <View style={styles.iconContainer}>
               <TouchableOpacity onPress={() => toggleLike(item.id)}>
-                <AntDesign name={likedPosts[item.id] ? "heart" : "hearto"} size={20} color={likedPosts[item.id] ? "red" : "gray"} />
+                <AntDesign 
+                  name={likedPosts[item.id] ? "heart" : "hearto"} 
+                  size={20} 
+                  color={likedPosts[item.id] ? "red" : "gray"} 
+                />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => handleShare(item.registrationLink)}>
                 <FontAwesome name="share" size={20} color="black" />
               </TouchableOpacity>
             </View>
+
             <View style={styles.buttonContainer}>
               <TouchableOpacity onPress={() => handleRegister(item.registrationLink)} style={styles.registerButton}>
                 <Text style={styles.registerButtonText}>Register</Text>
               </TouchableOpacity>
+
               <TouchableOpacity 
                 style={styles.viewButton} 
                 onPress={() => router.push({
@@ -113,14 +119,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  profileIcon: {
-    position: "absolute",
-    top: 10,
-    right: 15,
-    zIndex: 10,
-  },
   postContainer: {
-
     backgroundColor: "#FFF",
     borderRadius: 10,
     marginBottom: 15,
