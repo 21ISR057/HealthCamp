@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useRouter } from 'expo-router';
 export default function AdminPanel() {
   const router = useRouter();
-
+ 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Admin Panel</Text>
