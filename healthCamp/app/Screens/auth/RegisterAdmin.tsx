@@ -1,64 +1,88 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
+import { 
+  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert 
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { auth, db } from "../../../constants/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from 'expo-router';
+import { Picker } from '@react-native-picker/picker';
+
 export default function AdminRegister() {
-  const [ngoName, setNgoName] = useState("");
-  const [ngoId, setNgoId] = useState("");
+  const [orgName, setOrgName] = useState("");
   const [email, setEmail] = useState("");
+  const [role, setRole] = useState("ngo_admin"); // Default role
   const [password, setPassword] = useState("");
   const router = useRouter();
-  // NGO Registration
+
   const handleRegister = async () => {
-    if (!ngoName || !ngoId || !email || !password) {
-      Alert.alert("Error", "All fields are required, including certificate!");
+    if (!orgName || !email || !password) {
+      Alert.alert("Error", "All fields are required!");
       return;
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-      await setDoc(doc(db, "ngos", user.uid), {
-        ngoName,
-        ngoId,
+
+      const adminData = {
+        uid: user.uid,
+        orgName,
         email,
-        role: "ngo_admin",
-      });
+        role, // Selected role
+        createdAt: serverTimestamp(),
+      };
 
-      await AsyncStorage.setItem(
-        "admin",
-        JSON.stringify({ uid: user.uid, ngoName, ngoId, role: "ngo_admin" })
-      );
+      // Store admin data in Firestore
+      await setDoc(doc(db, "Ngo_data", user.uid), adminData);
 
+      // Save login details in AsyncStorage
+      await AsyncStorage.setItem("admin", JSON.stringify(adminData));  
       Alert.alert("Success", "Registration Successful! Please login.");
       router.push("/Screens/auth/AdminLogin");
-    } catch (error) {
+    } catch (error:any) {
+      console.error("Registration error:", error.message);
       Alert.alert("Error", "Registration failed. Please try again.");
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>NGO Registration</Text>
+      <Text style={styles.title}>NGO Admin Registration</Text>
 
-      <TextInput style={styles.input} placeholder="NGO Name" value={ngoName} onChangeText={setNgoName} />
-      <TextInput style={styles.input} placeholder="NGO Unique ID" value={ngoId} onChangeText={setNgoId} />
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" value={email} onChangeText={setEmail} />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+      <TextInput 
+        style={styles.input} 
+        placeholder="Organization Name" 
+        value={orgName} 
+        onChangeText={setOrgName} 
+      />
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Email" 
+        keyboardType="email-address" 
+        value={email} 
+        onChangeText={setEmail} 
+      />
+
+      <Picker
+        selectedValue={role}
+        style={styles.input}
+        onValueChange={(itemValue) => setRole(itemValue)}
+      >
+        <Picker.Item label="NGO Admin" value="ngo_admin" />
+        <Picker.Item label="Health Student" value="health_student" />
+      </Picker>
+
+      <TextInput 
+        style={styles.input} 
+        placeholder="Password" 
+        secureTextEntry 
+        value={password} 
+        onChangeText={setPassword} 
+      />
+
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
@@ -70,55 +94,45 @@ export default function AdminRegister() {
   );
 }
 
-// Styles remain the same as in your original file
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: "center",
-      alignItems: "center",
-      padding: 20,
-    },
-    title: {
-      fontSize: 28,
-      fontWeight: "bold",
-      marginBottom: 20,
-    },
-    input: {
-      width: "90%",
-      padding: 12,
-      borderWidth: 1,
-      borderRadius: 10,
-      marginBottom: 12,
-    },
-    button: {
-      backgroundColor: "#007BFF",
-      padding: 14,
-      width: "90%",
-      alignItems: "center",
-      borderRadius: 10,
-    },
-    buttonText: {
-      fontSize: 18,
-      color: "#FFF",
-      fontWeight: "bold",
-    },
-    toggleText: {
-      fontSize: 16,
-      color: "#007BFF",
-      marginTop: 10,
-    },
-    uploadButton: {
-      backgroundColor: "#28a745",
-      padding: 12,
-      borderRadius: 10,
-      width: "90%",
-      alignItems: "center",
-      marginTop: 10,
-    },
-    uploadText: {
-      fontSize: 16,
-      color: "#FFF",
-      fontWeight: "bold",
-    },
-  });
-  
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+    backgroundColor: "#E8F5E9",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  input: {
+    height: 50,
+    borderColor: "#2E7D32",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 15,
+    marginBottom: 15,
+    backgroundColor: "#FFF",
+  },
+  button: {
+    backgroundColor: "#2E7D32",
+    padding: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: "#FFF",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  toggleText: {
+    color: "#2E7D32",
+    textAlign: "center",
+    fontSize: 16,
+  },
+});
+

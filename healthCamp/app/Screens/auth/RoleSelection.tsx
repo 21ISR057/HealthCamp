@@ -6,7 +6,7 @@ import { useRouter } from 'expo-router';
 
 export default function RoleSelectionScreen() {
   const router = useRouter(); 
-  const [selectedRole, setSelectedRole] = useState<'user' | 'ngo' | 'healthStudent' | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'user' | 'admin' | null>(null);
   const { t, i18n } = useTranslation();
 
   useEffect(() => {
@@ -24,13 +24,12 @@ export default function RoleSelectionScreen() {
 
     if (selectedRole === 'user') {
       path = '/Screens/auth/RegisterScreenUser';
-    } else if (selectedRole === 'ngo') {
+    } else if (selectedRole === 'admin') { 
       path = '/Screens/auth/RegisterAdmin';
-    } else if (selectedRole === 'healthStudent') {
-      path = '/Screens/auth/AdminHealthRegister';
     } else {
       return; // Ensure a role is selected before navigating
     }
+    
 
     if (path) {
       router.push(path as any); // Navigate to the selected path
@@ -41,33 +40,23 @@ export default function RoleSelectionScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>{t('selectRole')}</Text>
 
-      {/* Role Selection (User / NGO / Health Student) */}
       <View style={styles.selectionContainer}>
-        <TouchableOpacity
-          style={[styles.option, selectedRole === 'user' && styles.selectedOption]}
-          onPress={() => setSelectedRole('user')}
-        >
-          <Image source={require('../../../assets/images/user.png')} style={styles.image} />
-          <Text style={styles.optionText}>{t('user')}</Text>
-        </TouchableOpacity>
+  <TouchableOpacity
+    style={[styles.option, selectedRole === 'user' && styles.selectedOption]}
+    onPress={() => setSelectedRole('user')}
+  >
+    <Image source={require('../../../assets/images/user.png')} style={styles.image} />
+    <Text style={styles.optionText}>{t('user')}</Text>
+  </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.option, selectedRole === 'ngo' && styles.selectedOption]}
-          onPress={() => setSelectedRole('ngo')}
-        >
-          <Image source={require('../../../assets/images/ngo.png')} style={styles.image} />
-          <Text style={styles.optionText}>{t('ngo')}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.option, selectedRole === 'healthStudent' && styles.selectedOption]}
-          onPress={() => setSelectedRole('healthStudent')}
-        >
-          <Image source={require('../../../assets/images/health_student.jpeg')} style={styles.image} />
-          <Text style={styles.optionText}>{t('health_student')}</Text>
-        </TouchableOpacity>
-      </View>
-
+  <TouchableOpacity
+    style={[styles.option, selectedRole === 'admin' && styles.selectedOption]}
+    onPress={() => setSelectedRole('admin')}
+  >
+    <Image source={require('../../../assets/images/ngo.png')} style={styles.image} />
+    <Text style={styles.optionText}>{t('admin')}</Text>
+  </TouchableOpacity>
+</View>
       {/* Continue Button */}
       <TouchableOpacity
         style={[

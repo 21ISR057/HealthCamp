@@ -43,7 +43,7 @@ export default function RegisterScreen() {
       await setDoc(doc(db, "users", user.uid), userData);
 
       Alert.alert("Success", "Registration Successful!");
-      router.push("/Screens/auth/LoginScreen"); // ✅ Use router.push instead of navigation.navigate
+      router.push("/Screens/auth/LoginScreen"); 
     } catch (error:any) {
       console.error("Registration error:", error.message);
       Alert.alert("Error", "Registration failed. Try again.");

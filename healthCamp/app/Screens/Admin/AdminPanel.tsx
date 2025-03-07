@@ -23,25 +23,23 @@ export default function AdminPanel() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     padding: 20,
+    backgroundColor: "#E8F5E9",
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: "bold",
+    color: "#2E7D32",
     marginBottom: 20,
   },
   button: {
-    backgroundColor: "#007BFF",
-    padding: 14,
-    width: "90%",
+    backgroundColor: "#2E7D32",
+    padding: 15,
+    borderRadius: 5,
     alignItems: "center",
-    borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 20,
   },
   buttonText: {
-    fontSize: 18,
     color: "#FFF",
     fontWeight: "bold",
   },
