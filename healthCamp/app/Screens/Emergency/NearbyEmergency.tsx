@@ -74,7 +74,7 @@ const App: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#007bff" />
       </View>
     );
   }
@@ -132,17 +132,17 @@ const App: React.FC = () => {
 
       {/* Emergency Contacts */}
       <View style={styles.emergencyContainer}>
-  <Text style={styles.emergencyTitle}>🚑 Emergency Contacts</Text>
-  <TouchableOpacity style={styles.callButton} onPress={() => callNumber('108')}>
-    <Text style={styles.callText}>🚨 108 - Ambulance Service</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={styles.callButton} onPress={() => callNumber('102')}>
-    <Text style={styles.callText}>🏥 102 - Pregnant Woman Helpline</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={styles.callButton} onPress={() => callNumber('112')}>
-    <Text style={styles.callText}>🆘 112 - National Emergency Number</Text>
-  </TouchableOpacity>
-</View>
+        <Text style={styles.emergencyTitle}>🚑 Emergency Contacts</Text>
+        <TouchableOpacity style={styles.callButton} onPress={() => callNumber('108')}>
+          <Text style={styles.callText}>🚨 108 - Ambulance Service</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.callButton} onPress={() => callNumber('102')}>
+          <Text style={styles.callText}>🏥 102 - Pregnant Woman Helpline</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.callButton} onPress={() => callNumber('112')}>
+          <Text style={styles.callText}>🆘 112 - National Emergency Number</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -153,14 +153,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+    backgroundColor: '#f5f5f5', // Light background
   },
   centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#f5f5f5', // Light background
   },
   navbar: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#007bff', // Primary blue color
     padding: 15,
     alignItems: 'center',
   },
@@ -181,20 +183,22 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
+    backgroundColor: 'white', // Light background for list items
   },
   listItemTitle: {
     fontWeight: 'bold',
+    color: '#333', // Dark text for better readability
   },
   emergencyContainer: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: '#ffe5e5',
+    backgroundColor: '#fff', // White background
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#ff4d4d',
-    shadowColor: '#ff0000',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 6, // For Android shadow
     alignItems: 'center',
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
   emergencyTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#cc0000',
+    color: '#cc0000', // Red for emphasis
     textAlign: 'center',
     marginBottom: 12,
     textTransform: 'uppercase',
@@ -210,7 +214,7 @@ const styles = StyleSheet.create({
   },
   callButton: {
     width: '90%',
-    backgroundColor: '#ff4d4d',
+    backgroundColor: '#ff4d4d', // Red for emergency buttons
     paddingVertical: 12,
     marginVertical: 6,
     borderRadius: 8,
@@ -225,7 +229,7 @@ const styles = StyleSheet.create({
   callText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#fff', // White text for buttons
     textAlign: 'center',
     letterSpacing: 1,
   },

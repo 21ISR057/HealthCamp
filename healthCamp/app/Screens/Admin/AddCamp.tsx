@@ -98,7 +98,15 @@ export default function AddCamp() {
       });
 
       Alert.alert("Success", "Health Camp Added Successfully!");
-      router.push("../Screens/admin/AdminPanel");
+
+      // Try navigating to AdminPanel first
+      try {
+        router.push("../(Screens)/Admin/AdminPanel");
+      } catch (error) {
+        console.error("AdminPanel not found. Redirecting to home screen...");
+        // Fallback to home screen
+        router.push("/");
+      }
     } catch (error) {
       Alert.alert("Error", "Failed to add health camp. Please try again.");
     }
@@ -113,66 +121,66 @@ export default function AddCamp() {
 
       <Text style={styles.subTitle}>Motion</Text>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={motion.screenings} onValueChange={(value:any) => setMotion({ ...motion, screenings: value })} />
+        <CheckBox value={motion.screenings} onValueChange={(value: any) => setMotion({ ...motion, screenings: value })} />
         <Text style={styles.label}>Screenings</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={motion.treatments} onValueChange={(value:any) => setMotion({ ...motion, treatments: value })} />
+        <CheckBox value={motion.treatments} onValueChange={(value: any) => setMotion({ ...motion, treatments: value })} />
         <Text style={styles.label}>Treatments</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={motion.healthEducation} onValueChange={(value:any) => setMotion({ ...motion, healthEducation: value })} />
+        <CheckBox value={motion.healthEducation} onValueChange={(value: any) => setMotion({ ...motion, healthEducation: value })} />
         <Text style={styles.label}>Health Education</Text>
       </View>
 
       <Text style={styles.subTitle}>Benefits of Your Camp</Text>
       <Text style={styles.sectionTitle}>Screening</Text>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.screening.visionHearing} onValueChange={(value:any) => setBenefits({ ...benefits, screening: { ...benefits.screening, visionHearing: value } })} />
+        <CheckBox value={benefits.screening.visionHearing} onValueChange={(value: any) => setBenefits({ ...benefits, screening: { ...benefits.screening, visionHearing: value } })} />
         <Text style={styles.label}>Vision and Hearing</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.screening.dental} onValueChange={(value:any) => setBenefits({ ...benefits, screening: { ...benefits.screening, dental: value } })} />
+        <CheckBox value={benefits.screening.dental} onValueChange={(value: any) => setBenefits({ ...benefits, screening: { ...benefits.screening, dental: value } })} />
         <Text style={styles.label}>Dental</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.screening.nutritional} onValueChange={(value:any) => setBenefits({ ...benefits, screening: { ...benefits.screening, nutritional: value } })} />
+        <CheckBox value={benefits.screening.nutritional} onValueChange={(value: any) => setBenefits({ ...benefits, screening: { ...benefits.screening, nutritional: value } })} />
         <Text style={styles.label}>Nutritional</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.screening.bloodPressure} onValueChange={(value:any) => setBenefits({ ...benefits, screening: { ...benefits.screening, bloodPressure: value } })} />
+        <CheckBox value={benefits.screening.bloodPressure} onValueChange={(value: any) => setBenefits({ ...benefits, screening: { ...benefits.screening, bloodPressure: value } })} />
         <Text style={styles.label}>Blood Pressure</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.screening.bloodSugar} onValueChange={(value:any) => setBenefits({ ...benefits, screening: { ...benefits.screening, bloodSugar: value } })} />
+        <CheckBox value={benefits.screening.bloodSugar} onValueChange={(value: any) => setBenefits({ ...benefits, screening: { ...benefits.screening, bloodSugar: value } })} />
         <Text style={styles.label}>Blood Sugar</Text>
       </View>
 
       <Text style={styles.sectionTitle}>Treatments</Text>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.treatments.cataractOperations} onValueChange={(value:any) => setBenefits({ ...benefits, treatments: { ...benefits.treatments, cataractOperations: value } })} />
+        <CheckBox value={benefits.treatments.cataractOperations} onValueChange={(value: any) => setBenefits({ ...benefits, treatments: { ...benefits.treatments, cataractOperations: value } })} />
         <Text style={styles.label}>Cataract Operations</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.treatments.sterilization} onValueChange={(value:any) => setBenefits({ ...benefits, treatments: { ...benefits.treatments, sterilization: value } })} />
+        <CheckBox value={benefits.treatments.sterilization} onValueChange={(value: any) => setBenefits({ ...benefits, treatments: { ...benefits.treatments, sterilization: value } })} />
         <Text style={styles.label}>Sterilization</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.treatments.cleftPalateOperations} onValueChange={(value:any) => setBenefits({ ...benefits, treatments: { ...benefits.treatments, cleftPalateOperations: value } })} />
+        <CheckBox value={benefits.treatments.cleftPalateOperations} onValueChange={(value: any) => setBenefits({ ...benefits, treatments: { ...benefits.treatments, cleftPalateOperations: value } })} />
         <Text style={styles.label}>Cleft Palate Operations</Text>
       </View>
 
       <Text style={styles.sectionTitle}>Health Education</Text>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.healthEducation.basicHealthcare} onValueChange={(value:any) => setBenefits({ ...benefits, healthEducation: { ...benefits.healthEducation, basicHealthcare: value } })} />
+        <CheckBox value={benefits.healthEducation.basicHealthcare} onValueChange={(value: any) => setBenefits({ ...benefits, healthEducation: { ...benefits.healthEducation, basicHealthcare: value } })} />
         <Text style={styles.label}>Basic Healthcare</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.healthEducation.diseasePrevention} onValueChange={(value:any) => setBenefits({ ...benefits, healthEducation: { ...benefits.healthEducation, diseasePrevention: value } })} />
+        <CheckBox value={benefits.healthEducation.diseasePrevention} onValueChange={(value: any) => setBenefits({ ...benefits, healthEducation: { ...benefits.healthEducation, diseasePrevention: value } })} />
         <Text style={styles.label}>Disease Prevention</Text>
       </View>
       <View style={styles.checkboxContainer}>
-        <CheckBox value={benefits.healthEducation.healthyLiving} onValueChange={(value:any) => setBenefits({ ...benefits, healthEducation: { ...benefits.healthEducation, healthyLiving: value } })} />
+        <CheckBox value={benefits.healthEducation.healthyLiving} onValueChange={(value: any) => setBenefits({ ...benefits, healthEducation: { ...benefits.healthEducation, healthyLiving: value } })} />
         <Text style={styles.label}>Healthy Living</Text>
       </View>
 
@@ -188,7 +196,7 @@ export default function AddCamp() {
           value={dateFrom}
           mode="date"
           display="default"
-          onChange={(event:any, selectedDate:any) => {
+          onChange={(event: any, selectedDate: any) => {
             setShowDateFromPicker(false);
             if (selectedDate) setDateFrom(selectedDate);
           }}
@@ -203,7 +211,7 @@ export default function AddCamp() {
           value={dateTo}
           mode="date"
           display="default"
-          onChange={(event:any, selectedDate:any) => {
+          onChange={(event: any, selectedDate: any) => {
             setShowDateToPicker(false);
             if (selectedDate) setDateTo(selectedDate);
           }}
