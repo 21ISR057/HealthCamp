@@ -12,7 +12,7 @@ export default function AdminPanel() {
         <Text style={styles.buttonText}>Add Health Camp</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewCamp")}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push("../Screens/Admin/ViewCamp")}>
         <Text style={styles.buttonText}>View Health Camps</Text>
       </TouchableOpacity>
     </View>
