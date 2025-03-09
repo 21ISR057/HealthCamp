@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert } from "react-native";
 import { useRouter } from 'expo-router';
-import { db } from "../../../constants/firebase";
-import { collection, query, where, getDocs, deleteDoc,doc } from "firebase/firestore";
-import { auth } from "../../../constants/firebase";
+import { db, auth } from "../../../constants/firebase";
+import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore";
 
 interface HealthCamp {
   id: string;
-  campName: string;
+  healthCampName: string;
   location: string;
 }
 
-export default function ViewCamps() {
+export default function ViewCamp() {
   const [camps, setCamps] = useState<HealthCamp[]>([]);
   const router = useRouter();
   const user = auth.currentUser;
@@ -46,9 +45,9 @@ export default function ViewCamps() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }: { item: HealthCamp }) => (
           <View style={styles.campItem}>
-            <Text style={styles.campName}>{item.campName}</Text>
+            <Text style={styles.campName}>{item.healthCampName}</Text>
             <Text style={styles.campLocation}>{item.location}</Text>
-            <TouchableOpacity style={styles.editButton} onPress={() => router.push(`../Screens/admin/EditCamp?id=${item.id}`)}>
+            <TouchableOpacity style={styles.editButton} onPress={() => router.push(`/Screens/Admin/EditCamp?id=${item.id}`)}>
               <Text style={styles.buttonText}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteCamp(item.id)}>
