@@ -37,6 +37,7 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/Admin/AddCamp" options={{ title: "Add Camp" }} />
         <Stack.Screen name="Screens/Admin/ViewCamp" options={{ title: "View Camps" }} />
         <Stack.Screen name="Screens/Admin/EditCamp" options={{ title: "Edit Camp" }} />
+
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
