@@ -79,7 +79,7 @@ export default function ViewCamp() {
   };
 
   const handleOpenMap = async (latitude: number, longitude: number) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
+    const url = 'https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}';
     try {
       await Linking.openURL(url);
     } catch (error) {
@@ -94,7 +94,7 @@ export default function ViewCamp() {
   // Generate Geoapify map URL
   const getGeoapifyMapUrl = (latitude: number, longitude: number) => {
     const apiKey = "0358f75d36084c9089636544e0aeed50"; // Your Geoapify API key
-    return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${longitude},${latitude}&zoom=14&marker=lonlat:${longitude},${latitude};color:%23ff0000;size:medium&apiKey=${apiKey}`;
+    return 'https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${longitude},${latitude}&zoom=14&marker=lonlat:${longitude},${latitude};color:%23ff0000;size:medium&apiKey=${apiKey}';
   };
 
   return (
@@ -136,6 +136,116 @@ export default function ViewCamp() {
             )}
 
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.editButton} onPress={() => router.push(`/Screens/Admin/EditCamp?id=${item.id}`)}>
+              <TouchableOpacity style={styles.editButton} onPress={() => router.push('/Screens/Admin/EditCamp?id=${item.id}')}>
                 <Text style={styles.buttonText}>Edit</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteCamp(item.id)}>
+                <Text style={styles.buttonText}>Delete</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.viewMoreButton} onPress={() => handleViewMore(item.id)}>
+                <Text style={styles.buttonText}>{expandedCampId === item.id ? "View Less" : "View More"}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#E8F5E9",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 20,
+  },
+  campItem: {
+    backgroundColor: "#FFF",
+    padding: 15,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  campName: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2E7D32",
+  },
+  campOrganization: {
+    fontSize: 16,
+    color: "#2E7D32",
+  },
+  campLocation: {
+    fontSize: 14,
+    color: "#2E7D32",
+  },
+  campTime: {
+    fontSize: 14,
+    color: "#2E7D32",
+  },
+  registrationLink: {
+    fontSize: 14,
+    color: "#007BFF",
+    textDecorationLine: "underline",
+    marginTop: 5,
+  },
+  campDescription: {
+    fontSize: 14,
+    color: "#2E7D32",
+    marginTop: 10,
+  },
+  campDetails: {
+    fontSize: 14,
+    color: "#2E7D32",
+    marginTop: 5,
+  },
+  map: {
+    height: 200,
+    marginTop: 10,
+    borderRadius: 5,
+  },
+  mapButton: {
+    backgroundColor: "#2E7D32",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  editButton: {
+    backgroundColor: "#2E7D32",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+    alignItems: "center",
+  },
+  deleteButton: {
+    backgroundColor: "#D32F2F",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    marginRight: 5,
+    alignItems: "center",
+  },
+  viewMoreButton: {
+    backgroundColor: "#007BFF",
+    padding: 10,
+    borderRadius: 5,
+    flex: 1,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
+});
