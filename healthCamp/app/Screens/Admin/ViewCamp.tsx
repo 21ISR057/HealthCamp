@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Alert, Linking } from "react-native";
-import { useRouter } from 'expo-router';
+import { useRouter } from "expo-router";
 import { db, auth } from "../../../constants/firebase";
 import { collection, query, where, getDocs, deleteDoc, doc, Timestamp } from "firebase/firestore";
-import { WebView } from 'react-native-webview'; // Use WebView for Geoapify maps
-import * as Location from 'expo-location';
+import { WebView } from "react-native-webview";
 
 interface HealthCamp {
   id: string;
   organizationName: string;
   healthCampName: string;
   location: string;
-  timeFrom: Date; // Use Date type
-  timeTo: Date; // Use Date type
+  date: Date;
+  timeFrom: Date;
+  timeTo: Date;
   description: string;
   ambulancesAvailable: string;
   hospitalNearby: string;
@@ -34,15 +34,16 @@ export default function ViewCamp() {
   const fetchCamps = async () => {
     const q = query(collection(db, "healthCamps"), where("adminId", "==", user?.uid));
     const querySnapshot = await getDocs(q);
-    const campsData: HealthCamp[] = querySnapshot.docs.map(doc => {
+    const campsData: HealthCamp[] = querySnapshot.docs.map((doc) => {
       const data = doc.data();
 
       // Convert Firestore Timestamp to JavaScript Date
+      const date = data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date || new Date());
       const timeFrom = data.timeFrom instanceof Timestamp ? data.timeFrom.toDate() : new Date(data.timeFrom || new Date());
       const timeTo = data.timeTo instanceof Timestamp ? data.timeTo.toDate() : new Date(data.timeTo || new Date());
 
-      if (isNaN(timeFrom.getTime()) || isNaN(timeTo.getTime())) {
-        console.error("Invalid date detected:", data.timeFrom, data.timeTo);
+      if (isNaN(date.getTime()) || isNaN(timeFrom.getTime()) || isNaN(timeTo.getTime())) {
+        console.error("Invalid date detected:", data.date, data.timeFrom, data.timeTo);
         Alert.alert("Error", "Invalid date format in Firestore.");
       }
 
@@ -51,8 +52,9 @@ export default function ViewCamp() {
         organizationName: data.organizationName,
         healthCampName: data.healthCampName,
         location: data.location,
-        timeFrom, // Use parsed Date object
-        timeTo, // Use parsed Date object
+        date,
+        timeFrom,
+        timeTo,
         description: data.description,
         ambulancesAvailable: data.ambulancesAvailable,
         hospitalNearby: data.hospitalNearby,
@@ -79,7 +81,7 @@ export default function ViewCamp() {
   };
 
   const handleOpenMap = async (latitude: number, longitude: number) => {
-    const url = 'https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}';
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
     try {
       await Linking.openURL(url);
     } catch (error) {
@@ -94,7 +96,7 @@ export default function ViewCamp() {
   // Generate Geoapify map URL
   const getGeoapifyMapUrl = (latitude: number, longitude: number) => {
     const apiKey = "0358f75d36084c9089636544e0aeed50"; // Your Geoapify API key
-    return 'https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${longitude},${latitude}&zoom=14&marker=lonlat:${longitude},${latitude};color:%23ff0000;size:medium&apiKey=${apiKey}';
+    return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${longitude},${latitude}&zoom=14&marker=lonlat:${longitude},${latitude};color:%23ff0000;size:medium&apiKey=${apiKey}`;
   };
 
   return (
@@ -109,6 +111,7 @@ export default function ViewCamp() {
             <Text style={styles.campName}>{item.healthCampName}</Text>
             <Text style={styles.campOrganization}>{item.organizationName}</Text>
             <Text style={styles.campLocation}>{item.location}</Text>
+            <Text style={styles.campDate}>Date: {item.date.toLocaleDateString()}</Text>
             <Text style={styles.campTime}>
               Time: {item.timeFrom.toLocaleTimeString()} - {item.timeTo.toLocaleTimeString()}
             </Text>
@@ -136,7 +139,7 @@ export default function ViewCamp() {
             )}
 
             <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.editButton} onPress={() => router.push('/Screens/Admin/EditCamp?id=${item.id}')}>
+              <TouchableOpacity style={styles.editButton} onPress={() => router.push(`/Screens/Admin/EditCamp?id=${item.id}`)}>
                 <Text style={styles.buttonText}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteCamp(item.id)}>
@@ -149,6 +152,7 @@ export default function ViewCamp() {
           </View>
         )}
       />
+      
     </View>
   );
 }
@@ -183,6 +187,11 @@ const styles = StyleSheet.create({
   campLocation: {
     fontSize: 14,
     color: "#2E7D32",
+  },
+  campDate: {
+    fontSize: 14,
+    color: "#2E7D32",
+    marginTop: 5,
   },
   campTime: {
     fontSize: 14,
