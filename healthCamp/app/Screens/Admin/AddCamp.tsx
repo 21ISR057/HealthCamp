@@ -58,6 +58,8 @@ export default function AddCamp() {
   const [organizationName, setOrganizationName] = useState("");
   const [healthCampName, setHealthCampName] = useState("");
   const [location, setLocation] = useState(districts[0]); // Default to the first district
+  const [date, setDate] = useState(new Date()); // Add this state
+  const [showDatePicker, setShowDatePicker] = useState(false); // Add this state
   const [timeFrom, setTimeFrom] = useState(new Date());
   const [timeTo, setTimeTo] = useState(new Date());
   const [description, setDescription] = useState("");
@@ -70,6 +72,14 @@ export default function AddCamp() {
   const [showTimeToPicker, setShowTimeToPicker] = useState(false);
 
   const router = useRouter();
+
+  // Add this function to handle date selection
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
 
   const handleAddCamp = async () => {
     // Validate all required fields
@@ -97,6 +107,7 @@ export default function AddCamp() {
         organizationName,
         healthCampName,
         location,
+        date: date.toISOString(), // Add the date field
         timeFrom: timeFrom.toISOString(),
         timeTo: timeTo.toISOString(),
         description,
@@ -160,6 +171,25 @@ export default function AddCamp() {
         )}
       </View>
 
+      {/* Add Date Picker */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Date:</Text>
+        <TouchableOpacity
+          style={styles.timeButton}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.timeButtonText}>{date.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
+      </View>
+
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Time From:</Text>
         <TouchableOpacity
@@ -180,7 +210,7 @@ export default function AddCamp() {
           />
         )}
       </View>
-       
+
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Time To:</Text>
         <TouchableOpacity

@@ -1,25 +1,66 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from "react-native";
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import { db } from "../../../constants/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 
 const districts = [
-  "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri", "Dindigul", 
-  "Erode", "Kallakurichi", "Kanchipuram", "Kanyakumari", "Karur", "Krishnagiri", "Madurai", 
-  "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur", "Pudukkottai", "Ramanathapuram", 
-  "Ranipet", "Salem", "Sivaganga", "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", 
-  "Tiruchirappalli", "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai", 
-  "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar"
+  "Ariyalur",
+  "Chengalpattu",
+  "Chennai",
+  "Coimbatore",
+  "Cuddalore",
+  "Dharmapuri",
+  "Dindigul",
+  "Erode",
+  "Kallakurichi",
+  "Kanchipuram",
+  "Kanyakumari",
+  "Karur",
+  "Krishnagiri",
+  "Madurai",
+  "Nagapattinam",
+  "Namakkal",
+  "Nilgiris",
+  "Perambalur",
+  "Pudukkottai",
+  "Ramanathapuram",
+  "Ranipet",
+  "Salem",
+  "Sivaganga",
+  "Tenkasi",
+  "Thanjavur",
+  "Theni",
+  "Thoothukudi",
+  "Tiruchirappalli",
+  "Tirunelveli",
+  "Tirupathur",
+  "Tiruppur",
+  "Tiruvallur",
+  "Tiruvannamalai",
+  "Tiruvarur",
+  "Vellore",
+  "Viluppuram",
+  "Virudhunagar",
 ];
 
 export default function EditCamp() {
   const { id } = useLocalSearchParams(); // Get the `id` from the query parameter
   const [organizationName, setOrganizationName] = useState("");
   const [healthCampName, setHealthCampName] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(districts[0]); // Default to the first district
+  const [date, setDate] = useState(new Date()); // Add this state
+  const [showDatePicker, setShowDatePicker] = useState(false); // Add this state
   const [timeFrom, setTimeFrom] = useState(new Date());
   const [timeTo, setTimeTo] = useState(new Date());
   const [description, setDescription] = useState("");
@@ -51,7 +92,8 @@ export default function EditCamp() {
       const data = docSnap.data();
       setOrganizationName(data.organizationName);
       setHealthCampName(data.healthCampName);
-      setLocation(data.location);
+      setLocation(data.location || districts[0]); // Default to the first district if location is missing
+      setDate(data.date.toDate()); // Set the date field
       setTimeFrom(data.timeFrom.toDate());
       setTimeTo(data.timeTo.toDate());
       setDescription(data.description);
@@ -65,8 +107,26 @@ export default function EditCamp() {
     }
   };
 
+  // Add this function to handle date selection
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDate(selectedDate);
+    }
+  };
+
   const handleUpdateCamp = async () => {
-    if (!organizationName || !healthCampName || !location || !description || !ambulancesAvailable || !hospitalNearby || !latitude || !longitude || !registrationUrl) {
+    if (
+      !organizationName ||
+      !healthCampName ||
+      !location ||
+      !description ||
+      !ambulancesAvailable ||
+      !hospitalNearby ||
+      !latitude ||
+      !longitude ||
+      !registrationUrl
+    ) {
       Alert.alert("Error", "All fields are required!");
       return;
     }
@@ -76,8 +136,9 @@ export default function EditCamp() {
         organizationName,
         healthCampName,
         location,
-        timeFrom,
-        timeTo,
+        date: date.toISOString(), // Add the date field
+        timeFrom: timeFrom.toISOString(),
+        timeTo: timeTo.toISOString(),
         description,
         ambulancesAvailable,
         hospitalNearby,
@@ -94,35 +155,71 @@ export default function EditCamp() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView contentContainerStyle={styles.scrollContainer}>
       <Text style={styles.title}>Edit Health Camp</Text>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Organization Name:</Text>
-        <TextInput style={styles.input} placeholder="Enter Organization Name" value={organizationName} onChangeText={setOrganizationName} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Organization Name"
+          value={organizationName}
+          onChangeText={setOrganizationName}
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Health Camp Name:</Text>
-        <TextInput style={styles.input} placeholder="Enter Health Camp Name" value={healthCampName} onChangeText={setHealthCampName} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Health Camp Name"
+          value={healthCampName}
+          onChangeText={setHealthCampName}
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Location:</Text>
-        <Picker
-          selectedValue={location}
-          style={styles.picker}
-          onValueChange={(itemValue: string) => setLocation(itemValue)}
+        {districts && districts.length > 0 ? (
+          <Picker
+            selectedValue={location}
+            style={styles.picker}
+            onValueChange={(itemValue) => setLocation(itemValue)}
+          >
+            {districts.map((district) => (
+              <Picker.Item key={district} label={district} value={district} />
+            ))}
+          </Picker>
+        ) : (
+          <Text>No districts available</Text>
+        )}
+      </View>
+
+      {/* Add Date Picker */}
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>Date:</Text>
+        <TouchableOpacity
+          style={styles.timeButton}
+          onPress={() => setShowDatePicker(true)}
         >
-          {districts.map((district) => (
-            <Picker.Item key={district} label={district} value={district} />
-          ))}
-        </Picker>
+          <Text style={styles.timeButtonText}>{date.toLocaleDateString()}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Time From:</Text>
-        <TouchableOpacity style={styles.timeButton} onPress={() => setShowTimeFromPicker(true)}>
+        <TouchableOpacity
+          style={styles.timeButton}
+          onPress={() => setShowTimeFromPicker(true)}
+        >
           <Text style={styles.timeButtonText}>{timeFrom.toLocaleTimeString()}</Text>
         </TouchableOpacity>
         {showTimeFromPicker && (
@@ -140,7 +237,10 @@ export default function EditCamp() {
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Time To:</Text>
-        <TouchableOpacity style={styles.timeButton} onPress={() => setShowTimeToPicker(true)}>
+        <TouchableOpacity
+          style={styles.timeButton}
+          onPress={() => setShowTimeToPicker(true)}
+        >
           <Text style={styles.timeButtonText}>{timeTo.toLocaleTimeString()}</Text>
         </TouchableOpacity>
         {showTimeToPicker && (
@@ -158,32 +258,66 @@ export default function EditCamp() {
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Description:</Text>
-        <TextInput style={styles.input} placeholder="Enter Description" value={description} onChangeText={setDescription} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Description"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Ambulances Available:</Text>
-        <TextInput style={styles.input} placeholder="Enter Number of Ambulances" value={ambulancesAvailable} onChangeText={setAmbulancesAvailable} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Number of Ambulances"
+          value={ambulancesAvailable}
+          onChangeText={setAmbulancesAvailable}
+          keyboardType="numeric"
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Hospital Nearby:</Text>
-        <TextInput style={styles.input} placeholder="Enter Nearby Hospital" value={hospitalNearby} onChangeText={setHospitalNearby} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Nearby Hospital"
+          value={hospitalNearby}
+          onChangeText={setHospitalNearby}
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Latitude:</Text>
-        <TextInput style={styles.input} placeholder="Enter Latitude" value={latitude} onChangeText={setLatitude} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Latitude"
+          value={latitude}
+          onChangeText={setLatitude}
+          keyboardType="numeric"
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Longitude:</Text>
-        <TextInput style={styles.input} placeholder="Enter Longitude" value={longitude} onChangeText={setLongitude} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Longitude"
+          value={longitude}
+          onChangeText={setLongitude}
+          keyboardType="numeric"
+        />
       </View>
 
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Registration URL:</Text>
-        <TextInput style={styles.input} placeholder="Enter Registration URL" value={registrationUrl} onChangeText={setRegistrationUrl} />
+        <TextInput
+          style={styles.input}
+          placeholder="Enter Registration URL"
+          value={registrationUrl}
+          onChangeText={setRegistrationUrl}
+        />
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleUpdateCamp}>
@@ -194,9 +328,9 @@ export default function EditCamp() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
+  scrollContainer: {
+    flexGrow: 1,
+    padding: 10,
     backgroundColor: "#E8F5E9",
   },
   title: {
@@ -219,12 +353,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
+    backgroundColor: "#FFF",
   },
   picker: {
-    height: 40,
+    height: 50,
     borderColor: "#2E7D32",
     borderWidth: 1,
     borderRadius: 5,
+    backgroundColor: "#FFF",
   },
   timeButton: {
     backgroundColor: "#2E7D32",
