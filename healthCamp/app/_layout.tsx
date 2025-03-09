@@ -33,6 +33,10 @@ export default function RootLayout() {
         <Stack.Screen name="Home" options={{ title: "Home" }} />
         <Stack.Screen name="CampDetails" options={{ title: "Camp Details" }} />
         <Stack.Screen name="userprofile" options={{ title: "User Profile" }} />
+        <Stack.Screen name="AdminPanel" options={{ title: "Admin Panel" }} />
+        <Stack.Screen name="AddCamp" options={{ title: "Add Health Camp" }} /> {/* Add this route */}
+        <Stack.Screen name="ViewCamp" options={{ title: "View Health Camps" }} /> {/* Add this route */}
+        <Stack.Screen name="EditCamp" options={{ title: "Edit Health Camp" }} /> {/* Add this route */}
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
