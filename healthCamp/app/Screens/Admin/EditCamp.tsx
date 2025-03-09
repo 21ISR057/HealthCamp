@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from "react-native";
-import { Picker } from "@react-native-picker/picker";
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Picker } from "@react-native-picker/picker";
 import { db } from "../../../constants/firebase";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -16,7 +16,7 @@ const districts = [
 ];
 
 export default function EditCamp() {
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams(); // Get the `id` from the query parameter
   const [organizationName, setOrganizationName] = useState("");
   const [healthCampName, setHealthCampName] = useState("");
   const [location, setLocation] = useState("");
@@ -33,11 +33,17 @@ export default function EditCamp() {
 
   const router = useRouter();
 
+  // Fetch the camp details when the component mounts
   useEffect(() => {
     fetchCamp();
   }, []);
 
   const fetchCamp = async () => {
+    if (!id) {
+      Alert.alert("Error", "Camp ID is missing!");
+      return;
+    }
+
     const docRef = doc(db, "healthCamps", id as string);
     const docSnap = await getDoc(docRef);
 
