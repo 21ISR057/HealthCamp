@@ -180,7 +180,7 @@ export default function AddCamp() {
           />
         )}
       </View>
-
+       
       <View style={styles.inputContainer}>
         <Text style={styles.label}>Time To:</Text>
         <TouchableOpacity
