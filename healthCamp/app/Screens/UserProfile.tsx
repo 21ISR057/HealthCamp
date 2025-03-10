@@ -11,7 +11,11 @@ import {
   ScrollView,
 } from "react-native";
 import { getAuth } from "firebase/auth";
+<<<<<<< HEAD
 import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+=======
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 import { app } from "../../constants/firebase"; // Ensure correct import
 
 // Define UserData Type
@@ -26,6 +30,7 @@ interface UserData {
   profileImage?: string; // Optional field
 }
 
+<<<<<<< HEAD
 interface Camp {
   id: string;
   healthCampName: string;
@@ -108,6 +113,8 @@ const CampSection = ({ camps, title, showStatus = false }: CampSectionProps) => 
   </View>
 );
 
+=======
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 const UserProfile = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -116,9 +123,13 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editMode, setEditMode] = useState(false);
+<<<<<<< HEAD
   const [updatedData, setUpdatedData] = useState<Partial<UserData>>({}); // Initialize as empty object
   const [registeredCamps, setRegisteredCamps] = useState<Camp[]>([]); // User's registered camps
   const [verifiedCamps, setVerifiedCamps] = useState<Camp[]>([]); // Verified camps
+=======
+  const [updatedData, setUpdatedData] = useState<Partial<UserData> | null>(null);
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 
   // Fetch user data from Firestore
   useEffect(() => {
@@ -132,6 +143,7 @@ const UserProfile = () => {
           if (userDoc.exists()) {
             const data = userDoc.data() as UserData;
             setUserData(data);
+<<<<<<< HEAD
             setUpdatedData(data); // Initialize updatedData with user data
           } else {
             setError("User data not found.");
@@ -164,6 +176,12 @@ const UserProfile = () => {
 
           setRegisteredCamps(campsData);
           setVerifiedCamps(campsData.filter((camp) => camp.verified)); // Filter verified camps
+=======
+            setUpdatedData(data);
+          } else {
+            setError("User data not found.");
+          }
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
         } else {
           setError("No authenticated user.");
         }
@@ -204,6 +222,7 @@ const UserProfile = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+<<<<<<< HEAD
       {userData && (
         <ProfileSection
           userData={userData}
@@ -217,6 +236,32 @@ const UserProfile = () => {
 
       <CampSection camps={registeredCamps} title="My Registered Camps" showStatus />
       <CampSection camps={verifiedCamps} title="Verified Camps" />
+=======
+      <Image
+        source={{ uri: userData?.profileImage || "https://www.w3schools.com/howto/img_avatar.png" }}
+        style={styles.profileImage}
+      />
+      <Button title={editMode ? "Cancel" : "Edit Details"} onPress={() => setEditMode(!editMode)} />
+
+      {Object.entries(userData || {}).map(([key, value]) => (
+        <View key={key} style={styles.row}>
+          <Text style={styles.label}>{key.replace(/([A-Z])/g, " $1").trim()}:</Text>
+          {editMode ? (
+            <TextInput
+              style={styles.input}
+              value={String(updatedData?.[key as keyof UserData] || "")} // Convert to string
+              onChangeText={(text) =>
+                setUpdatedData((prev) => ({ ...prev!, [key]: text }))
+              }
+            />
+          ) : (
+            <Text style={styles.userInfo}>{String(value)}</Text>
+          )}
+        </View>
+      ))}
+
+      {editMode && <Button title="Save Changes" onPress={handleUpdate} color="green" />}
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
     </ScrollView>
   );
 };
@@ -227,6 +272,7 @@ export default UserProfile;
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
+<<<<<<< HEAD
     backgroundColor: "#F8F9FA",
     padding: 20,
   },
@@ -234,6 +280,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 20,
   },
+=======
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8F9FA",
+    padding: 20,
+  },
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   profileImage: {
     width: 120,
     height: 120,
@@ -281,6 +334,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 20,
   },
+<<<<<<< HEAD
   sectionContainer: {
     marginBottom: 20,
   },
@@ -322,3 +376,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
+=======
+});
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
