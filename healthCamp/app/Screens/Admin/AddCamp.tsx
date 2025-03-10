@@ -287,10 +287,10 @@ export default function AddCamp() {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Registration URL:</Text>
+        <Text style={styles.label}>Website URL:</Text>
         <TextInput
           style={styles.input}
-          placeholder="Enter Registration URL"
+          placeholder="Enter Website URL"
           value={registrationUrl}
           onChangeText={setRegistrationUrl}
         />
