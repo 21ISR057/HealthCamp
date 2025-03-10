@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+<<<<<<< HEAD
 import {
   View,
   Text,
@@ -11,6 +12,11 @@ import { db, auth } from "../../../constants/firebase";
 import { collection, getDocs, query, where, updateDoc, doc } from "firebase/firestore";
 import * as FileSystem from "expo-file-system"; // For file system operations
 import * as Sharing from 'expo-sharing'; // For sharing files
+=======
+import { View, Text, FlatList, StyleSheet } from "react-native";
+import { db, auth } from "../../../constants/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 
 interface Registration {
   id: string;
@@ -19,6 +25,7 @@ interface Registration {
   email: string;
   phone: string;
   createdAt: Date;
+<<<<<<< HEAD
   verified: boolean; // Add verified field
 }
 
@@ -31,12 +38,17 @@ interface CampReport {
   campName: string;
   totalRegistrations: number;
   verifiedRegistrations: number;
+=======
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 }
 
 const ViewRegistrationsScreen = () => {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+<<<<<<< HEAD
   const [camps, setCamps] = useState<Camp[]>([]); // Store camp data
   const [campReports, setCampReports] = useState<CampReport[]>([]); // Store camp reports
+=======
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 
   useEffect(() => {
     fetchRegistrations();
@@ -51,6 +63,7 @@ const ViewRegistrationsScreen = () => {
     const healthCampsSnapshot = await getDocs(healthCampsQuery);
     const healthCampIds = healthCampsSnapshot.docs.map((doc) => doc.id);
 
+<<<<<<< HEAD
     // Store camp data for mapping
     const campsData: Camp[] = healthCampsSnapshot.docs.map((doc) => ({
       id: doc.id,
@@ -58,6 +71,8 @@ const ViewRegistrationsScreen = () => {
     }));
     setCamps(campsData);
 
+=======
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
     // Fetch registrations for these health camps
     const registrationsQuery = query(collection(db, "registrations"), where("campId", "in", healthCampIds));
     const registrationsSnapshot = await getDocs(registrationsQuery);
@@ -70,6 +85,7 @@ const ViewRegistrationsScreen = () => {
         email: data.email,
         phone: data.phone,
         createdAt: data.createdAt.toDate(),
+<<<<<<< HEAD
         verified: data.verified || false, // Default to false if not set
       } as Registration;
     });
@@ -156,6 +172,11 @@ const ViewRegistrationsScreen = () => {
       console.error("Error downloading CSV:", error);
       Alert.alert("Error", "Failed to download CSV file.");
     }
+=======
+      } as Registration;
+    });
+    setRegistrations(registrationsData);
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   };
 
   return (
@@ -169,6 +190,7 @@ const ViewRegistrationsScreen = () => {
             <Text style={styles.registrationText}>Name: {item.name}</Text>
             <Text style={styles.registrationText}>Email: {item.email}</Text>
             <Text style={styles.registrationText}>Phone: {item.phone}</Text>
+<<<<<<< HEAD
             <Text style={styles.registrationText}>
               Registered on: {item.createdAt.toLocaleDateString()}
             </Text>
@@ -203,6 +225,12 @@ const ViewRegistrationsScreen = () => {
       <TouchableOpacity style={styles.downloadButton} onPress={downloadCSV}>
         <Text style={styles.downloadButtonText}>Download Report as CSV</Text>
       </TouchableOpacity>
+=======
+            <Text style={styles.registrationText}>Registered on: {item.createdAt.toLocaleDateString()}</Text>
+          </View>
+        )}
+      />
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
     </View>
   );
 };
@@ -228,6 +256,7 @@ const styles = StyleSheet.create({
   registrationText: {
     fontSize: 14,
     color: "#2E7D32",
+<<<<<<< HEAD
     marginBottom: 5,
   },
   verifyButton: {
@@ -270,6 +299,8 @@ const styles = StyleSheet.create({
   downloadButtonText: {
     color: "#FFF",
     fontWeight: "bold",
+=======
+>>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   },
 });
 
