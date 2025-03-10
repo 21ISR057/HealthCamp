@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Share, Modal, TextInput, Alert } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Share, Modal, TextInput, Alert, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
-import { Menu, Provider } from "react-native-paper"; // Import Menu and Provider
+import { Menu, Provider } from "react-native-paper";
 import Navbar from "../../components/Navbar";
 import { db } from "../../constants/firebase";
 import { collection, getDocs, Timestamp, addDoc } from "firebase/firestore";
@@ -35,7 +35,7 @@ const HomeScreen = () => {
   const [email, setEmail] = useState("");
   const [complaint, setComplaint] = useState("");
   const [feedback, setFeedback] = useState("");
-  const [menuVisible, setMenuVisible] = useState(false); // State for menu visibility
+  const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {
     fetchCamps();
@@ -69,6 +69,11 @@ const HomeScreen = () => {
     setCamps(campsData);
   };
 
+  // Function to generate a random image URL based on the health camp name
+  const getRandomImageUrl = (seed: string) => {
+    return `https://picsum.photos/seed/${seed}/300/200`;
+  };
+
   const handleRegister = (link: string) => {
     Linking.openURL(link).catch((err) => console.error("Failed to open URL:", err));
   };
@@ -97,7 +102,7 @@ const HomeScreen = () => {
   };
 
   const getGeoapifyMapUrl = (latitude: number, longitude: number) => {
-    const apiKey = "0358f75d36084c9089636544e0aeed50"; // Your Geoapify API key
+    const apiKey = "0358f75d36084c9089636544e0aeed50";
     return `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${longitude},${latitude}&zoom=14&marker=lonlat:${longitude},${latitude};color:%23ff0000;size:medium&apiKey=${apiKey}`;
   };
 
@@ -169,16 +174,24 @@ const HomeScreen = () => {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.campItem}>
+              {/* Random Image */}
+              <Image
+                source={{ uri: getRandomImageUrl(item.healthCampName) }}
+                style={styles.campImage}
+              />
               <View style={styles.campHeader}>
-                <Text style={styles.campName}>{item.healthCampName}</Text>
+                <Text style={styles.organizationName}>{item.organizationName}</Text>
                 <Menu
                   visible={menuVisible && selectedCampId === item.id}
                   onDismiss={() => setMenuVisible(false)}
                   anchor={
-                    <TouchableOpacity onPress={() => {
-                      setSelectedCampId(item.id);
-                      setMenuVisible(true);
-                    }}>
+                    <TouchableOpacity 
+                      style={styles.menuButton}
+                      onPress={() => {
+                        setSelectedCampId(item.id);
+                        setMenuVisible(true);
+                      }}
+                    >
                       <FontAwesome name="ellipsis-v" size={24} color="#2E7D32" />
                     </TouchableOpacity>
                   }
@@ -199,7 +212,7 @@ const HomeScreen = () => {
                   />
                 </Menu>
               </View>
-              <Text style={styles.campOrganization}>{item.organizationName}</Text>
+              <Text style={styles.campName}>{item.healthCampName}</Text>
               <Text style={styles.campLocation}>{item.location}</Text>
               <Text style={styles.campDate}>Date: {item.date.toLocaleDateString()}</Text>
               <Text style={styles.campTime}>
@@ -207,7 +220,7 @@ const HomeScreen = () => {
               </Text>
 
               <TouchableOpacity onPress={() => handleRegister(item.registrationUrl)}>
-                <Text style={styles.registrationLink}>Registration Link</Text>
+                <Text style={styles.registrationLink}>Go to Website</Text>
               </TouchableOpacity>
 
               {expandedCampId === item.id && (
@@ -230,6 +243,9 @@ const HomeScreen = () => {
               <View style={styles.buttonContainer}>
                 <TouchableOpacity style={styles.viewMoreButton} onPress={() => setExpandedCampId(expandedCampId === item.id ? null : item.id)}>
                   <Text style={styles.buttonText}>{expandedCampId === item.id ? "View Less" : "View More"}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.registerButton} onPress={() => router.push(`../Screens/UserRegister?campId=${item.id}`)}>
+                  <Text style={styles.buttonText}>Register</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -306,17 +322,23 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     marginBottom: 10,
   },
+  campImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 5,
+    marginBottom: 10,
+  },
   campHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  campName: {
+  organizationName: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#2E7D32",
   },
-  campOrganization: {
+  campName: {
     fontSize: 16,
     color: "#2E7D32",
   },
@@ -370,6 +392,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: "center",
+    marginRight: 10,
+  },
+  registerButton: {
+    backgroundColor: "#2E7D32",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
   },
   buttonText: {
     color: "#FFF",
@@ -413,6 +442,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
     marginTop: 10,
+  },
+  menuButton: {
+    padding: 10,
   },
 });
 
