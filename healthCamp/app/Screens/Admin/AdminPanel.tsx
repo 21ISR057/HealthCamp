@@ -24,6 +24,10 @@ const AdminPanel: React.FC = () => {
       <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewFeedbacksScreen")}>
         <Text style={styles.buttonText}>View Feedbacks</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewRegistrationScreen")}>
+        <Text style={styles.buttonText}>View Registrations</Text>
+      </TouchableOpacity>
     </View>
   );
 };

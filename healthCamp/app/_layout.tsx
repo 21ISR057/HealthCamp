@@ -39,7 +39,9 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/Admin/EditCamp" options={{ title: "Edit Camp" }} />
         <Stack.Screen name="Screens/Admin/ViewComplaintsScreen" options={{ title: "View Complaints" }} />
         <Stack.Screen name="Screens/Admin/ViewFeedbacksScreen" options={{ title: "View Feedback" }} />
-        
+        <Stack.Screen name="Screens/Admin/ViewRegistrationScreen" options={{ title: "View Registrations" }} />
+        <Stack.Screen name="Screens/HomeScreen" options={{ title: "Home Screen" }} />
+<Stack.Screen name="Screens/UserRegister" options={{ title: "Register" }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
