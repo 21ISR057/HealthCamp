@@ -51,8 +51,8 @@ export default function RegisterScreenUser() {
       await setDoc(doc(db, "users", user.uid), userData);
 
       Alert.alert("Success", "Registration Successful!");
-      router.push("/Screens/auth/LoginScreen");
-    } catch (error: any) {
+      router.push("../Screens/auth/LoginScreen"); 
+    } catch (error:any) {
       console.error("Registration error:", error.message);
       Alert.alert("Error", "Registration failed. Try again.");
     }
