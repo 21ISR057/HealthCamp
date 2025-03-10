@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import { db } from "../../../constants/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { db, auth } from "../../../constants/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { useRouter } from "expo-router";
 
 interface Feedback {
@@ -21,8 +21,18 @@ const ViewFeedbacksScreen: React.FC = () => {
   }, []);
 
   const fetchFeedbacks = async () => {
-    const querySnapshot = await getDocs(collection(db, "feedbacks"));
-    const feedbacksData: Feedback[] = querySnapshot.docs.map((doc) => {
+    const adminId = auth.currentUser?.uid; // Get the logged-in admin's ID
+    if (!adminId) return;
+
+    // Fetch health camps created by the admin
+    const healthCampsQuery = query(collection(db, "healthCamps"), where("adminId", "==", adminId));
+    const healthCampsSnapshot = await getDocs(healthCampsQuery);
+    const healthCampNames = healthCampsSnapshot.docs.map((doc) => doc.data().healthCampName);
+
+    // Fetch feedbacks for these health camps
+    const feedbacksQuery = query(collection(db, "feedbacks"), where("healthCampName", "in", healthCampNames));
+    const feedbacksSnapshot = await getDocs(feedbacksQuery);
+    const feedbacksData: Feedback[] = feedbacksSnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
