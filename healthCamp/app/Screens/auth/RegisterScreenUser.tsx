@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../../../constants/firebase"; // Import Firebase
-import { useRouter } from "expo-router"; // ✅ Import useRouter
+import { auth, db } from "../../../constants/firebase";
+import { useRouter } from "expo-router";
+import { Picker } from "@react-native-picker/picker"; // ✅ Import Picker
 
-export default function RegisterScreen() {
-  const router = useRouter(); // ✅ Initialize router
+export default function RegisterScreenUser() { 
+  const router = useRouter();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,20 +15,28 @@ export default function RegisterScreen() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [gender, setGender] = useState("");
   const [dob, setDob] = useState("");
-  const [locality, setLocality] = useState("");
+  const [locality, setLocality] = useState(""); // ✅ Set initial state for locality
+
+  const districts = [
+    "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
+    "Dindigul", "Erode", "Kallakurichi", "Kanchipuram", "Kanyakumari", "Karur",
+    "Krishnagiri", "Madurai", "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur",
+    "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga", "Tenkasi",
+    "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupathur",
+    "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar"
+  ];
+
   // 🔹 Handle Registration Function
   const handleRegister = async () => {
-    if (!fullName || !email || !password || !phoneNumber || !gender || !dob||!locality) {
+    if (!fullName || !email || !password || !phoneNumber || !gender || !dob || !locality) {
       Alert.alert("Error", "All fields are required!");
       return;
     }
 
     try {
-      // 🔹 Create User in Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 🔹 Dynamic User Data to Store in Firestore
       const userData = {
         uid: user.uid,
         fullName,
@@ -39,12 +48,11 @@ export default function RegisterScreen() {
         createdAt: serverTimestamp(),
       };
 
-      // 🔹 Store Data in Firestore
       await setDoc(doc(db, "users", user.uid), userData);
 
       Alert.alert("Success", "Registration Successful!");
-      router.push("/Screens/auth/LoginScreen"); // ✅ Use router.push instead of navigation.navigate
-    } catch (error:any) {
+      router.push("/Screens/auth/LoginScreen");
+    } catch (error: any) {
       console.error("Registration error:", error.message);
       Alert.alert("Error", "Registration failed. Try again.");
     }
@@ -60,19 +68,29 @@ export default function RegisterScreen() {
       <TextInput style={styles.input} placeholder="Phone Number" keyboardType="phone-pad" value={phoneNumber} onChangeText={setPhoneNumber} />
       <TextInput style={styles.input} placeholder="Gender" value={gender} onChangeText={setGender} />
       <TextInput style={styles.input} placeholder="Date of Birth (YYYY-MM-DD)" value={dob} onChangeText={setDob} />
-      <TextInput style={styles.input} placeholder="Locality" value={locality} onChangeText={setLocality} /> {/* ✅ Added input for locality */}
+
+      {/* 🔹 Locality Dropdown */}
+      <View style={styles.pickerContainer}>
+        <Picker selectedValue={locality} onValueChange={(itemValue) => setLocality(itemValue)}>
+          <Picker.Item label="Select Locality" value="" />
+          {districts.map((district, index) => (
+            <Picker.Item key={index} label={district} value={district} />
+          ))}
+        </Picker>
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleRegister}>
         <Text style={styles.buttonText}>Register</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("/Screens/auth/LoginScreen")}> 
+      <TouchableOpacity onPress={() => router.push("/Screens/auth/LoginScreen")}>
         <Text style={styles.toggleText}>Already registered? Login</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
+// 🔹 Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -97,6 +115,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     fontSize: 16,
   },
+  pickerContainer: {
+    width: "90%",
+    borderWidth: 1,
+    borderColor: "#CCC",
+    borderRadius: 10,
+    marginBottom: 12,
+    backgroundColor: "#FFF",
+  },
   button: {
     backgroundColor: "#007BFF",
     padding: 14,
@@ -116,3 +142,5 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
 });
+
+

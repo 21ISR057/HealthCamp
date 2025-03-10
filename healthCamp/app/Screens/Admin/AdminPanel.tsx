@@ -1,9 +1,10 @@
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { useRouter } from 'expo-router';
-export default function AdminPanel() {
+import { useRouter } from "expo-router";
+
+const AdminPanel: React.FC = () => {
   const router = useRouter();
- 
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Admin Panel</Text>
@@ -12,12 +13,24 @@ export default function AdminPanel() {
         <Text style={styles.buttonText}>Add Health Camp</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("../Screens/Admin/ViewCamp")}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewCamp")}>
         <Text style={styles.buttonText}>View Health Camps</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewComplaintsScreen")}>
+        <Text style={styles.buttonText}>View Complaints</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewFeedbacksScreen")}>
+        <Text style={styles.buttonText}>View Feedbacks</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewRegistrationScreen")}>
+        <Text style={styles.buttonText}>View Registrations</Text>
       </TouchableOpacity>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -43,3 +56,5 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 });
+
+export default AdminPanel;

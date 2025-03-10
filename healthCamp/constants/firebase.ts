@@ -3,8 +3,8 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
+
 const firebaseConfig = {
-  // Your Firebase config
   apiKey: "AIzaSyBvP7ggFVlcm4r4IarEuKR5jQTQXT_sNXc",
   authDomain: "healthcamp-8cef2.firebaseapp.com",
   projectId: "healthcamp-8cef2",
