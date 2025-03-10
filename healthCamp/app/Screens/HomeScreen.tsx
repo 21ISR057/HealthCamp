@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Share, Modal, TextInput, Alert, Image } from "react-native";
-const useRouter = require("expo-router").useRouter;
 
+import { useRouter } from "expo-router";
 import { AntDesign, FontAwesome } from "@expo/vector-icons";
 import { Menu, Provider } from "react-native-paper";
 import Navbar from "../../components/Navbar";
