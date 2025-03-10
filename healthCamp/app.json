@@ -9,15 +9,25 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "We need your location to show the map.",
+        "NSLocationAlwaysUsageDescription": "We need your location to show the map.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to show the map."
+      },
+      "bundleIdentifier": "com.healthcamp.firebase"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-       "package":"com.healthcamp.firebase",
-      "googleServicesFile":"./google-services.json"
+      "package": "com.healthcamp.firebase",
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -34,7 +44,27 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 33,
+            "targetSdkVersion": 33,
+            "buildToolsVersion": "33.0.0"
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ],
+      "expo-updates" 
     ],
     "experiments": {
       "typedRoutes": true
