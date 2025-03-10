@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+const useRouter = require("expo-router").useRouter;
+
 
 const Navbar = () => {
   const [menuVisible, setMenuVisible] = useState(false);
@@ -25,6 +26,9 @@ const Navbar = () => {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("../Screens/UserProfile")}>
             <Text style={styles.navItem}>👤 User Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push("../Screens/MedicalReport")}>
+            <Text style={styles.navItem}>🩺 Medical Report</Text>
           </TouchableOpacity>
         </View>
       )}

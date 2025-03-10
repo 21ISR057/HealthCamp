@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Button, ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Linking, TouchableOpacity } from 'react-native';
+import { 
+  View, Text, Button, ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, 
+  Linking, TouchableOpacity 
+} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import axios from 'axios';
 
 const { width, height } = Dimensions.get('window');
 
-interface Hospital {
+interface Place {
   name: string;
   address: string;
   latitude: number;
   longitude: number;
+  distance?: string;
 }
 
 // Function to initiate a call
@@ -22,39 +26,67 @@ const callNumber = (phoneNumber: string) => {
 const getLocation = async (): Promise<Location.LocationObjectCoords | null> => {
   let { status } = await Location.requestForegroundPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert('Permission Denied', 'Enable location services to fetch nearby hospitals.');
+    Alert.alert('Permission Denied', 'Enable location services to fetch nearby services.');
     return null;
   }
   let location = await Location.getCurrentPositionAsync({});
   return location.coords;
 };
 
-// Fetch Nearby Hospitals
-const fetchNearbyHospitals = async (latitude: number, longitude: number): Promise<Hospital[]> => {
-  const apiKey = '0358f75d36084c9089636544e0aeed50'; // Replace with your API Key
+// Fetch Nearby Services (Hospitals or Medical Shops)
+const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const R = 6371; // Radius of Earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return (R * c).toFixed(2) + " km";
+};
+
+const fetchNearbyServices = async (latitude: number, longitude: number, category: string): Promise<Place[]> => {
+  const apiKey = '0358f75d36084c9089636544e0aeed50'; 
   const radiusMeters = 5000;
-  const url = `https://api.geoapify.com/v2/places?categories=healthcare.hospital&filter=circle:${longitude},${latitude},${radiusMeters}&limit=10&apiKey=${apiKey}`;
+  const url = `https://api.geoapify.com/v2/places?categories=${category}&filter=circle:${longitude},${latitude},${radiusMeters}&limit=10&apiKey=${apiKey}`;
 
   try {
     const response = await axios.get(url);
-    return response.data.features.map((feature: any): Hospital => ({
-      name: feature.properties.name || 'Unknown Hospital',
-      address: feature.properties.address_line1 || 'Address not available',
-      latitude: feature.properties.lat,
-      longitude: feature.properties.lon,
-    }));
+    return response.data.features.map((feature: any): Place => {
+      const placeLat = feature.geometry.coordinates[1];
+      const placeLon = feature.geometry.coordinates[0];
+      return {
+        name: feature.properties.name || 'Unknown Place',
+        address: feature.properties.address_line1 || 'Address not available',
+        latitude: placeLat,
+        longitude: placeLon,
+        distance: getDistance(latitude, longitude, placeLat, placeLon), // Calculate distance manually
+       // rating: feature.properties.rating || 0, // Fetch rating
+      };
+    });
   } catch (error) {
-    console.error('Error fetching hospitals:', error);
+    console.error('Error fetching services:', error);
     return [];
   }
+};
+
+// Send SOS Alert
+const sendSOSAlert = async (latitude: number, longitude: number) => {
+  const emergencyNumber = '112'; // National emergency number
+  const message = `Emergency! I need help. My location: https://www.google.com/maps?q=${latitude},${longitude}`;
+  const smsUrl = `sms:${emergencyNumber}?body=${encodeURIComponent(message)}`;
+
+  Linking.openURL(smsUrl).catch(err => console.error('Error sending SOS alert', err));
 };
 
 // Main App Component
 const App: React.FC = () => {
   const [location, setLocation] = useState<Location.LocationObjectCoords | null>(null);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [services, setServices] = useState<Place[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [showMap, setShowMap] = useState<boolean>(false);
+  const [serviceType, setServiceType] = useState<'hospital' | 'medical'>('hospital');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,12 +96,30 @@ const App: React.FC = () => {
         return;
       }
       setLocation(coords);
-      const hospitalData = await fetchNearbyHospitals(coords.latitude, coords.longitude);
-      setHospitals(hospitalData);
-      setLoading(false);
+      fetchServiceData(coords.latitude, coords.longitude, 'healthcare.hospital');
     };
     fetchData();
   }, []);
+
+  const fetchServiceData = async (latitude: number, longitude: number, category: string) => {
+    setLoading(true);
+    const data = await fetchNearbyServices(latitude, longitude, category);
+    setServices(data);
+    setLoading(false);
+  };
+
+  const toggleServiceType = async () => {
+    const newType = serviceType === 'hospital' ? 'medical' : 'hospital';
+    setServiceType(newType);
+    console.log(`Toggling service type to: ${newType}`);
+
+  
+    if (location) {
+      const category = newType === 'hospital' ? 'healthcare.hospital' : 'healthcare.pharmacy';
+      await fetchServiceData(location.latitude, location.longitude, category);
+    }
+  };
+  
 
   if (loading) {
     return (
@@ -83,12 +133,17 @@ const App: React.FC = () => {
     <View style={styles.container}>
       {/* Navbar */}
       <View style={styles.navbar}>
-        <Text style={styles.navbarText}>Hospital Finder</Text>
+        <Text style={styles.navbarText}>Nearby Services Finder</Text>
       </View>
 
-      {/* Toggle Button */}
+      {/* Toggle Buttons */}
       <View style={styles.buttonContainer}>
         <Button title={showMap ? 'Show List' : 'Visualize'} onPress={() => setShowMap(!showMap)} />
+        <Button
+  title={serviceType === 'hospital' ? 'Show Medical Shops' : 'Show Hospitals'}
+  onPress={toggleServiceType}
+/>
+
       </View>
 
       {/* Map View */}
@@ -107,27 +162,29 @@ const App: React.FC = () => {
             title="Your Location"
             pinColor="blue"
           />
-          {hospitals.map((hospital, index) => (
+          {services.map((place, index) => (
             <Marker
               key={index}
-              coordinate={{ latitude: hospital.latitude, longitude: hospital.longitude }}
-              title={hospital.name}
-              description={hospital.address}
+              coordinate={{ latitude: place.latitude, longitude: place.longitude }}
+              title={place.name}
+              description={`${place.address} - ${place.distance}`}
             />
           ))}
         </MapView>
       ) : (
-        // Table View
+        // List View
         <FlatList
-          data={hospitals}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.listItem}>
+            data={services}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.listItem}>
               <Text style={styles.listItemTitle}>{item.name}</Text>
               <Text>{item.address}</Text>
-            </View>
-          )}
-        />
+              {item.distance && <Text>Distance: {item.distance}</Text>}
+    </View>
+  )}
+/>
+
       )}
 
       {/* Emergency Contacts */}
@@ -136,11 +193,11 @@ const App: React.FC = () => {
         <TouchableOpacity style={styles.callButton} onPress={() => callNumber('108')}>
           <Text style={styles.callText}>🚨 108 - Ambulance Service</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.callButton} onPress={() => callNumber('102')}>
-          <Text style={styles.callText}>🏥 102 - Pregnant Woman Helpline</Text>
-        </TouchableOpacity>
         <TouchableOpacity style={styles.callButton} onPress={() => callNumber('112')}>
           <Text style={styles.callText}>🆘 112 - National Emergency Number</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.sosButton} onPress={() => location && sendSOSAlert(location.latitude, location.longitude)}>
+          <Text style={styles.callText}>📢 SOS Emergency Alert</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -150,87 +207,18 @@ const App: React.FC = () => {
 export default App;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: '#f5f5f5', // Light background
-  },
-  centeredContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5', // Light background
-  },
-  navbar: {
-    backgroundColor: '#007bff', // Primary blue color
-    padding: 15,
-    alignItems: 'center',
-  },
-  navbarText: {
-    fontSize: 20,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  buttonContainer: {
-    marginVertical: 10,
-    alignItems: 'center',
-  },
-  map: {
-    width: width,
-    height: height * 0.6,
-  },
-  listItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    backgroundColor: 'white', // Light background for list items
-  },
-  listItemTitle: {
-    fontWeight: 'bold',
-    color: '#333', // Dark text for better readability
-  },
-  emergencyContainer: {
-    marginTop: 20,
-    padding: 15,
-    backgroundColor: '#fff', // White background
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ff4d4d',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 6, // For Android shadow
-    alignItems: 'center',
-  },
-  emergencyTitle: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#cc0000', // Red for emphasis
-    textAlign: 'center',
-    marginBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
-  callButton: {
-    width: '90%',
-    backgroundColor: '#ff4d4d', // Red for emergency buttons
-    paddingVertical: 12,
-    marginVertical: 6,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#b30000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  callText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff', // White text for buttons
-    textAlign: 'center',
-    letterSpacing: 1,
-  },
+  container: { flex: 1, padding: 10, backgroundColor: '#f5f5f5' },
+  centeredContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  navbar: { backgroundColor: '#007bff', padding: 15, alignItems: 'center' },
+  navbarText: { fontSize: 20, color: 'white', fontWeight: 'bold' },
+  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginVertical: 10 },
+  map: { width: width, height: height * 0.6 },
+  listItem: { padding: 10, borderBottomWidth: 1, backgroundColor: 'white' },
+  listItemTitle: { fontWeight: 'bold', color: '#333' },
+  emergencyContainer: { marginTop: 20, padding: 15, backgroundColor: '#fff', borderRadius: 12, borderWidth: 1, borderColor: '#ff4d4d', alignItems: 'center' },
+  emergencyTitle: { fontSize: 22, fontWeight: '700', color: '#cc0000', textAlign: 'center' },
+  callButton: { marginTop: 5, backgroundColor: '#ff4d4d', padding: 10, borderRadius: 8, alignItems: 'center' },
+  callText: { color: '#fff', fontWeight: 'bold' },
+  sosButton: { marginTop: 5, backgroundColor: '#ff0000', padding: 10, borderRadius: 8, alignItems: 'center' },
+
 });
