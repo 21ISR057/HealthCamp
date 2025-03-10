@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-<<<<<<< HEAD
 import {
   View,
   Text,
@@ -13,24 +12,15 @@ import {
   Alert,
   Image,
   ScrollView,
-  Dimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { AntDesign, FontAwesome, Ionicons } from "@expo/vector-icons";
-=======
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Share, Modal, TextInput, Alert, Image } from "react-native";
-import { useRouter } from "expo-router";
-import { AntDesign, FontAwesome } from "@expo/vector-icons";
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 import { Menu, Provider } from "react-native-paper";
 import Navbar from "../../components/Navbar";
 import { db } from "../../constants/firebase";
 import { collection, getDocs, Timestamp, addDoc } from "firebase/firestore";
 import { WebView } from "react-native-webview";
-<<<<<<< HEAD
 import DateTimePicker from "@react-native-community/datetimepicker";
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 
 interface HealthCamp {
   id: string;
@@ -52,10 +42,7 @@ const HomeScreen = () => {
   const router = useRouter();
   const [likedPosts, setLikedPosts] = useState<Record<string, boolean>>({});
   const [camps, setCamps] = useState<HealthCamp[]>([]);
-<<<<<<< HEAD
   const [filteredCamps, setFilteredCamps] = useState<HealthCamp[]>([]);
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   const [expandedCampId, setExpandedCampId] = useState<string | null>(null);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -64,7 +51,6 @@ const HomeScreen = () => {
   const [complaint, setComplaint] = useState("");
   const [feedback, setFeedback] = useState("");
   const [menuVisible, setMenuVisible] = useState(false);
-<<<<<<< HEAD
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -89,21 +75,10 @@ const HomeScreen = () => {
     checkForNotifications();
   }, [searchQuery, dateFrom, dateTo, selectedLocations, selectedCampNames, camps, userLocation]);
 
-=======
-
-  useEffect(() => {
-    fetchCamps();
-  }, []);
-
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   const fetchCamps = async () => {
     const querySnapshot = await getDocs(collection(db, "healthCamps"));
     const campsData: HealthCamp[] = querySnapshot.docs.map((doc) => {
       const data = doc.data();
-<<<<<<< HEAD
-=======
-
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
       const date = data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date || new Date());
       const timeFrom = data.timeFrom instanceof Timestamp ? data.timeFrom.toDate() : new Date(data.timeFrom || new Date());
       const timeTo = data.timeTo instanceof Timestamp ? data.timeTo.toDate() : new Date(data.timeTo || new Date());
@@ -125,12 +100,11 @@ const HomeScreen = () => {
       } as HealthCamp;
     });
     setCamps(campsData);
-<<<<<<< HEAD
     setFilteredCamps(campsData);
   };
 
   const checkForNotifications = () => {
-    const hasMatchingCamps = camps.some(camp => camp.location === userLocation);
+    const hasMatchingCamps = camps.some((camp) => camp.location === userLocation);
     setHasNotification(hasMatchingCamps);
   };
 
@@ -178,11 +152,6 @@ const HomeScreen = () => {
     setCampNameSuggestions(suggestions);
   };
 
-=======
-  };
-
-  // Function to generate a random image URL based on the health camp name
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   const getRandomImageUrl = (seed: string) => {
     return `https://picsum.photos/seed/${seed}/300/200`;
   };
@@ -225,7 +194,7 @@ const HomeScreen = () => {
       return;
     }
 
-    const camp = camps.find(camp => camp.id === selectedCampId);
+    const camp = camps.find((camp) => camp.id === selectedCampId);
     if (!camp) {
       Alert.alert("Error", "Camp not found");
       return;
@@ -254,7 +223,7 @@ const HomeScreen = () => {
       return;
     }
 
-    const camp = camps.find(camp => camp.id === selectedCampId);
+    const camp = camps.find((camp) => camp.id === selectedCampId);
     if (!camp) {
       Alert.alert("Error", "Camp not found");
       return;
@@ -277,21 +246,17 @@ const HomeScreen = () => {
     }
   };
 
-<<<<<<< HEAD
   const isCampActive = (campDate: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return campDate >= today;
   };
 
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   return (
     <Provider>
       <View style={styles.container}>
         <Navbar />
 
-<<<<<<< HEAD
         {/* Search and Filter UI */}
         <View style={styles.navbarContainer}>
           <TouchableOpacity onPress={() => setShowFilterModal(true)}>
@@ -448,91 +413,6 @@ const HomeScreen = () => {
         />
 
         {/* Complaint Modal */}
-=======
-        <FlatList
-          data={camps}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.campItem}>
-              {/* Random Image */}
-              <Image
-                source={{ uri: getRandomImageUrl(item.healthCampName) }}
-                style={styles.campImage}
-              />
-              <View style={styles.campHeader}>
-                <Text style={styles.organizationName}>{item.organizationName}</Text>
-                <Menu
-                  visible={menuVisible && selectedCampId === item.id}
-                  onDismiss={() => setMenuVisible(false)}
-                  anchor={
-                    <TouchableOpacity 
-                      style={styles.menuButton}
-                      onPress={() => {
-                        setSelectedCampId(item.id);
-                        setMenuVisible(true);
-                      }}
-                    >
-                      <FontAwesome name="ellipsis-v" size={24} color="#2E7D32" />
-                    </TouchableOpacity>
-                  }
-                >
-                  <Menu.Item
-                    onPress={() => {
-                      setShowComplaintModal(true);
-                      setMenuVisible(false);
-                    }}
-                    title="Raise a Complaint"
-                  />
-                  <Menu.Item
-                    onPress={() => {
-                      setShowFeedbackModal(true);
-                      setMenuVisible(false);
-                    }}
-                    title="Send Feedback"
-                  />
-                </Menu>
-              </View>
-              <Text style={styles.campName}>{item.healthCampName}</Text>
-              <Text style={styles.campLocation}>{item.location}</Text>
-              <Text style={styles.campDate}>Date: {item.date.toLocaleDateString()}</Text>
-              <Text style={styles.campTime}>
-                Time: {item.timeFrom.toLocaleTimeString()} - {item.timeTo.toLocaleTimeString()}
-              </Text>
-
-              <TouchableOpacity onPress={() => handleRegister(item.registrationUrl)}>
-                <Text style={styles.registrationLink}>Go to Website</Text>
-              </TouchableOpacity>
-
-              {expandedCampId === item.id && (
-                <View>
-                  <Text style={styles.campDescription}>{item.description}</Text>
-                  <Text style={styles.campDetails}>Ambulances: {item.ambulancesAvailable}</Text>
-                  <Text style={styles.campDetails}>Hospital Nearby: {item.hospitalNearby}</Text>
-
-                  <WebView
-                    source={{ uri: getGeoapifyMapUrl(item.latitude, item.longitude) }}
-                    style={styles.map}
-                  />
-
-                  <TouchableOpacity style={styles.mapButton} onPress={() => handleOpenMap(item.latitude, item.longitude)}>
-                    <Text style={styles.buttonText}>Open in Maps</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.viewMoreButton} onPress={() => setExpandedCampId(expandedCampId === item.id ? null : item.id)}>
-                  <Text style={styles.buttonText}>{expandedCampId === item.id ? "View Less" : "View More"}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.registerButton} onPress={() => router.push(`../Screens/UserRegister?campId=${item.id}`)}>
-                  <Text style={styles.buttonText}>Register</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
-        />
-
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
         <Modal visible={showComplaintModal} transparent={true} animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
@@ -560,10 +440,7 @@ const HomeScreen = () => {
           </View>
         </Modal>
 
-<<<<<<< HEAD
         {/* Feedback Modal */}
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
         <Modal visible={showFeedbackModal} transparent={true} animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
@@ -590,7 +467,6 @@ const HomeScreen = () => {
             </View>
           </View>
         </Modal>
-<<<<<<< HEAD
 
         {/* Filter Modal */}
         <Modal visible={showFilterModal} animationType="slide">
@@ -710,8 +586,6 @@ const HomeScreen = () => {
             }}
           />
         )}
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
       </View>
     </Provider>
   );
@@ -723,7 +597,6 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#E8F5E9",
   },
-<<<<<<< HEAD
   navbarContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -761,20 +634,15 @@ const styles = StyleSheet.create({
     marginRight: 5,
     fontSize: 12, // Smaller font size for filter tags
   },
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   campItem: {
     backgroundColor: "#FFF",
     padding: 15,
     borderRadius: 5,
     marginBottom: 10,
-<<<<<<< HEAD
     elevation: 2,
   },
   inactiveCamp: {
     opacity: 0.6,
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   },
   campImage: {
     width: "100%",
@@ -814,14 +682,11 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     marginTop: 5,
   },
-<<<<<<< HEAD
   inactiveText: {
     fontSize: 14,
     color: "#FF0000",
     marginTop: 5,
   },
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   campDescription: {
     fontSize: 14,
     color: "#2E7D32",
@@ -862,12 +727,9 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: "center",
   },
-<<<<<<< HEAD
   disabledButton: {
     backgroundColor: "#ccc",
   },
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   buttonText: {
     color: "#FFF",
     fontWeight: "bold",
@@ -883,10 +745,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     padding: 20,
     borderRadius: 10,
-<<<<<<< HEAD
     maxHeight: "80%",
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   },
   modalTitle: {
     fontSize: 18,
@@ -901,7 +760,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-<<<<<<< HEAD
   suggestionsContainer: {
     maxHeight: 100,
     marginBottom: 10,
@@ -922,8 +780,6 @@ const styles = StyleSheet.create({
   datePickerText: {
     color: "#2E7D32",
   },
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   submitButton: {
     backgroundColor: "#2E7D32",
     padding: 10,
@@ -931,7 +787,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-<<<<<<< HEAD
   resetButton: {
     backgroundColor: "#FF9800",
     padding: 10,
@@ -939,8 +794,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
   closeButton: {
     backgroundColor: "#FF0000",
     padding: 10,
@@ -951,18 +804,15 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 10,
   },
-<<<<<<< HEAD
   notificationDot: {
-    position: 'absolute',
+    position: "absolute",
     right: 0,
     top: 0,
-    backgroundColor: 'red',
+    backgroundColor: "red",
     borderRadius: 5,
     width: 10,
     height: 10,
   },
-=======
->>>>>>> e91dec83dd21cda0363788834ad67916fb1a00c7
 });
 
 export default HomeScreen;
