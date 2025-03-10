@@ -3,7 +3,6 @@ import { View, StyleSheet, Text, TouchableOpacity, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'expo-router';
-
 export default function RoleSelectionScreen() {
   const router = useRouter();
   const [selectedRole, setSelectedRole] = useState<'user' | 'admin' | null>(null);
@@ -40,7 +39,7 @@ export default function RoleSelectionScreen() {
       if (storedRole === 'user') {
         path = '/Screens/auth/RegisterScreenUser';
       } else if (storedRole === 'admin') {
-        path = '/Screens/auth/RegisterAdmin';
+        path ='/Screens/auth/RegisterAdmin' ;
       }
 
       if (path) {

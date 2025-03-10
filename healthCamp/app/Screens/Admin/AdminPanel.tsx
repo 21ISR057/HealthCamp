@@ -17,15 +17,15 @@ const AdminPanel: React.FC = () => {
         <Text style={styles.buttonText}>View Health Camps</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewComplaintsScreen")}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push("../Screens/Admin/ViewComplaintsScreen")}>
         <Text style={styles.buttonText}>View Complaints</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewFeedbacksScreen")}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push("../Screens/Admin/ViewFeedbacksScreen")}>
         <Text style={styles.buttonText}>View Feedbacks</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push("/Screens/Admin/ViewRegistrationScreen")}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push("../Screens/Admin/ViewRegistrationScreen")}>
         <Text style={styles.buttonText}>View Registrations</Text>
       </TouchableOpacity>
     </View>

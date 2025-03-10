@@ -55,7 +55,7 @@ const districts = [
 ];
 
 export default function EditCamp() {
-  const { id } = useLocalSearchParams(); // Get the `id` from the query parameter
+  const { id } = useLocalSearchParams(); // Get the id from the query parameter
   const [organizationName, setOrganizationName] = useState("");
   const [healthCampName, setHealthCampName] = useState("");
   const [location, setLocation] = useState(districts[0]); // Default to the first district

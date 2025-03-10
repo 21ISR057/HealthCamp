@@ -43,7 +43,7 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/Admin/ViewRegistrationScreen" options={{ title: "View Registrations" }} />
         <Stack.Screen name="Screens/HomeScreen" options={{ title: "Home Screen" }} />
         <Stack.Screen name="Screens/UserRegister" options={{ title: "Register" }} />
-        <Stack.Screen name="Screens/auth/LoginScreen" options={{ title: "Login screen" }} />
+        <Stack.Screen name="Screens/auth/LoginScreen" options={{ title: "Login screen" }} ></Stack.Screen>
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />

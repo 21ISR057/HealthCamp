@@ -32,7 +32,9 @@ const NocUpload = () => {
             alert('Please select a No Objection Certificate');
             return;
         }
+
         setUploading(true);
+
         setTimeout(() => {
             setUploading(false);
             setVerified(true);
