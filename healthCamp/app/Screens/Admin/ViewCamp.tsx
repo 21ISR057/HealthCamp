@@ -117,7 +117,7 @@ export default function ViewCamp() {
             </Text>
 
             <TouchableOpacity onPress={() => handleOpenRegistrationLink(item.registrationUrl)}>
-              <Text style={styles.registrationLink}>Registration Link</Text>
+              <Text style={styles.registrationLink}>Website Link</Text>
             </TouchableOpacity>
 
             {expandedCampId === item.id && (
