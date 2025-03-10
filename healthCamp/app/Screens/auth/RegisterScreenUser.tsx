@@ -3,10 +3,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "reac
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../../constants/firebase";
-const useRouter = require("expo-router").useRouter;
 
 import { Picker } from "@react-native-picker/picker"; // ✅ Import Picker
 
+import { useRouter } from "expo-router";
 export default function RegisterScreenUser() { 
   const router = useRouter();
 
