@@ -44,6 +44,7 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/UserRegister" options={{ title: "Register" }} />
         <Stack.Screen name="Screens/auth/LoginScreen" options={{ title: "Login screen" }} />
         <Stack.Screen name="govtHomeScreen" options={{ title: "Government Camps" }} />
+        <Stack.Screen name="HealthGuidelines" options={{ title: "Guidelines" }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
