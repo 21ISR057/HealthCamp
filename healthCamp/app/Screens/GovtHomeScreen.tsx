@@ -209,15 +209,6 @@ const GovtHomeScreen = () => {
             <Text style={styles.campDetails}>
               Population to be Covered: {item.Population_to_be_covered}
             </Text>
-            {/* <Text style={styles.campDetails}>
-              Distance to be Covered: {item.Distance_to_be_covered} km
-            </Text> */}
-            {/* <TouchableOpacity
-              style={styles.pdfButton}
-              onPress={() => handleViewPDF(item.Source_PDF)}
-            >
-              <Text style={styles.buttonText}>View PDF</Text>
-            </TouchableOpacity> */}
           </View>
         )}
       />
