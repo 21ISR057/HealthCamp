@@ -46,6 +46,7 @@ export default function RootLayout() {
         <Stack.Screen name="Screens/auth/LoginScreen" options={{ title: "Login screen" }} />
         <Stack.Screen name="Screens/MedicalReport" option={{title:"Medical Reports"}}/>
         <Stack.Screen name="Screens/Game/GameScreen" option={{title:"Health Games"}}/>
+        <Stack.Screen name="govtHomeScreen" options={{ title: "Government Camps" }} />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
