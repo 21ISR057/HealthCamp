@@ -1,5 +1,4 @@
 import os
-import tempfile
 import requests
 import fitz  # PyMuPDF
 import firebase_admin
@@ -7,19 +6,15 @@ from firebase_admin import credentials, firestore
 from datetime import datetime, timedelta
 import re
 
-# ✅ Load Firebase credentials from environment variable
-firebase_key_json = os.getenv("FIREBASE_CREDENTIALS")
+# ✅ Load Firebase credentials from a local JSON file
+FIREBASE_CREDENTIALS_PATH = "serviceAccountKey.json"  # 🔹 Change to your actual file path
 
-if firebase_key_json:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as temp_file:
-        temp_file.write(firebase_key_json.encode())
-        temp_file_path = temp_file.name
-
+if os.path.exists(FIREBASE_CREDENTIALS_PATH):
     if not firebase_admin._apps:
-        cred = credentials.Certificate(temp_file_path)
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
         firebase_admin.initialize_app(cred)
 else:
-    raise FileNotFoundError("❌ Firebase credentials not set in environment variables!")
+    raise FileNotFoundError("❌ Firebase credentials file not found!")
 
 # ✅ Connect to Firestore
 db = firestore.client()
