@@ -9,8 +9,6 @@ import {
   Image,
   ActivityIndicator,
   Alert,
-  TextInput,
-  ScrollView,
 } from "react-native";
 import { useRouter } from "expo-router";
 import Navbar from "../../components/Navbar";
@@ -32,21 +30,12 @@ interface GovtCamp {
 const GovtHomeScreen = () => {
   const router = useRouter();
   const [camps, setCamps] = useState<GovtCamp[]>([]);
-  const [filteredCamps, setFilteredCamps] = useState<GovtCamp[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedSessionTime, setSelectedSessionTime] = useState<string>("");
-  const [selectedPopulation, setSelectedPopulation] = useState<number | null>(null);
-  const [selectedDistance, setSelectedDistance] = useState<number | null>(null);
 
   useEffect(() => {
     fetchGovtCamps();
   }, []);
-
-  useEffect(() => {
-    filterCamps();
-  }, [searchQuery, selectedSessionTime, selectedPopulation, selectedDistance, camps]);
 
   const fetchGovtCamps = async () => {
     try {
@@ -65,18 +54,17 @@ const GovtHomeScreen = () => {
             Area_staff_involved: data.Area_staff_involved,
             Camp_Day: data.Camp_Day,
             Camp_Site: data.Camp_Site,
-            // Distance_to_be_covered: data.Distance_to_be_covered,
+            Distance_to_be_covered: data.Distance_to_be_covered,
             Name_of_Villages: data.Name_of_Villages,
             Population_to_be_covered: data.Population_to_be_covered,
             Session_Time: data.Session_Time,
-            // Source_PDF: data.Source_PDF,
+            Source_PDF: data.Source_PDF,
           } as GovtCamp;
         });
         allCamps = [...allCamps, ...campsData];
       }
 
       setCamps(allCamps);
-      setFilteredCamps(allCamps);
       setError(null);
     } catch (error) {
       console.error("Error fetching government camps:", error);
@@ -85,36 +73,6 @@ const GovtHomeScreen = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const filterCamps = () => {
-    let filtered = camps;
-
-    // Filter by search query (Camp_Site or Name_of_Villages)
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (camp) =>
-          camp.Camp_Site.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          camp.Name_of_Villages.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Filter by Session_Time
-    if (selectedSessionTime) {
-      filtered = filtered.filter((camp) => camp.Session_Time === selectedSessionTime);
-    }
-
-    // Filter by Population_to_be_covered
-    if (selectedPopulation) {
-      filtered = filtered.filter((camp) => camp.Population_to_be_covered >= selectedPopulation);
-    }
-
-    // Filter by Distance_to_be_covered
-    if (selectedDistance) {
-      filtered = filtered.filter((camp) => camp.Distance_to_be_covered <= selectedDistance);
-    }
-
-    setFilteredCamps(filtered);
   };
 
   const getRandomImageUrl = (seed: string) => {
@@ -148,53 +106,8 @@ const GovtHomeScreen = () => {
   return (
     <View style={styles.container}>
       <Navbar />
-
-      {/* Search and Filter UI */}
-      <View style={styles.navbarContainer}>
-        <TextInput
-          style={styles.searchBox}
-          placeholder="Search by camp site or village..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-      </View>
-
-      {/* Filter Options */}
-      <ScrollView horizontal style={styles.filterContainer}>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedSessionTime("9:00 AM - 12:00 PM")}
-        >
-          <Text style={styles.filterButtonText}>Morning Session</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedSessionTime("1:00 PM - 9:00 PM")}
-        >
-          <Text style={styles.filterButtonText}>Afternoon Session</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedPopulation(1000)}
-        >
-          <Text style={styles.filterButtonText}>Population ≥ 1000</Text>
-        </TouchableOpacity>
-      
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => {
-            setSelectedSessionTime("");
-            setSelectedPopulation(null);
-            setSelectedDistance(null);
-          }}
-        >
-          <Text style={styles.filterButtonText}>Clear Filters</Text>
-        </TouchableOpacity>
-      </ScrollView>
-
-      {/* Camp List */}
       <FlatList
-        data={filteredCamps}
+        data={camps}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.campItem}>
@@ -209,15 +122,15 @@ const GovtHomeScreen = () => {
             <Text style={styles.campDetails}>
               Population to be Covered: {item.Population_to_be_covered}
             </Text>
-            {/* <Text style={styles.campDetails}>
+            <Text style={styles.campDetails}>
               Distance to be Covered: {item.Distance_to_be_covered} km
-            </Text> */}
-            {/* <TouchableOpacity
+            </Text>
+            <TouchableOpacity
               style={styles.pdfButton}
               onPress={() => handleViewPDF(item.Source_PDF)}
             >
               <Text style={styles.buttonText}>View PDF</Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -230,38 +143,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
     backgroundColor: "#E8F5E9",
-  },
-  navbarContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 5,
-    marginBottom: 10,
-    elevation: 3,
-  },
-  searchBox: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: "#2E7D32",
-    borderRadius: 5,
-    padding: 10,
-    marginLeft: 10,
-    backgroundColor: "#FFF",
-  },
-  filterContainer: {
-    marginBottom: 10,
-  },
-  filterButton: {
-    backgroundColor: "#2E7D32",
-    padding: 10,
-    borderRadius: 5,
-    marginRight: 10,
-  },
-  filterButtonText: {
-    color: "#FFF",
-    fontWeight: "bold",
   },
   campItem: {
     backgroundColor: "#FFF",
