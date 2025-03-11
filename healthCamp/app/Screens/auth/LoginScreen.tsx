@@ -1,14 +1,43 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../../constants/firebase"; // Import Firebase
-import { useRouter } from "expo-router"; // Import useRouter
+import { auth } from "../../../constants/firebase";
+const useRouter = require("expo-router").useRouter;
+import * as Location from "expo-location";
 
 export default function LoginScreen() {
-  const router = useRouter(); // Initialize router
-
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // 🔹 Function to Check Location Permission and GPS Status
+  const checkLocationPermission = async () => {
+    console.log("🔍 Checking location permissions...");
+
+    // Check if location services (GPS) are enabled
+    const isLocationEnabled = await Location.hasServicesEnabledAsync();
+    console.log("📍 Is GPS enabled?:", isLocationEnabled);
+
+    if (!isLocationEnabled) {
+      Alert.alert(
+        "Location Disabled",
+        "Please turn on location services in your device settings."
+      );
+      return false;
+    }
+
+    // Request location permission
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    console.log("📜 Permission status:", status);
+
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please enable location to proceed.");
+      return false;
+    }
+
+    console.log("✅ Location permission granted!");
+    return true;
+  };
 
   // 🔹 Handle Login Function
   const handleLogin = async () => {
@@ -18,13 +47,27 @@ export default function LoginScreen() {
     }
 
     try {
-      // 🔹 Sign in User
+      console.log("🔑 Attempting login...");
       await signInWithEmailAndPassword(auth, email, password);
       Alert.alert("Success", "Login Successful!");
-      router.push('/Screens/HomeScreen');
-      //router.push('../Emergency/NearbyEmergency'); // ✅ Redirect to Dashboard after login
-    } catch (error:any) {
-      console.error("Login error:", error.message);
+      console.log("✅ Login successful!");
+
+      // 🔹 Check Location Permission Before Proceeding
+      const isLocationAvailable = await checkLocationPermission();
+      console.log("📍 Can proceed with location?:", isLocationAvailable);
+
+      if (!isLocationAvailable) {
+        Alert.alert(
+          "Location Required",
+          "Please enable location services to continue.",
+          [{ text: "OK", onPress: () => console.log("🔔 User prompted to enable location") }]
+        );
+      } else {
+        console.log("🚀 Navigating to Home Screen...");
+        router.push("/Screens/HomeScreen");
+      }
+    } catch (error: any) {
+      console.error("❌ Login error:", error.message);
       Alert.alert("Error", "Invalid email or password!");
     }
   };
@@ -53,7 +96,7 @@ export default function LoginScreen() {
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push("../Screens/auth/RegisterScreenUser")}>
+      <TouchableOpacity onPress={() => router.push("/Screens/auth/RegisterScreenUser")}>
         <Text style={styles.toggleText}>Don't have an account? Register</Text>
       </TouchableOpacity>
     </View>
