@@ -65,11 +65,11 @@ const GovtHomeScreen = () => {
             Area_staff_involved: data.Area_staff_involved,
             Camp_Day: data.Camp_Day,
             Camp_Site: data.Camp_Site,
-            Distance_to_be_covered: data.Distance_to_be_covered,
+            // Distance_to_be_covered: data.Distance_to_be_covered,
             Name_of_Villages: data.Name_of_Villages,
             Population_to_be_covered: data.Population_to_be_covered,
             Session_Time: data.Session_Time,
-            Source_PDF: data.Source_PDF,
+            // Source_PDF: data.Source_PDF,
           } as GovtCamp;
         });
         allCamps = [...allCamps, ...campsData];
@@ -150,7 +150,7 @@ const GovtHomeScreen = () => {
       <Navbar />
 
       {/* Search and Filter UI */}
-      <View style={styles.navbarContainer}>
+      <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchBox}
           placeholder="Search by camp site or village..."
@@ -160,31 +160,26 @@ const GovtHomeScreen = () => {
       </View>
 
       {/* Filter Options */}
-      <ScrollView horizontal style={styles.filterContainer}>
+      <ScrollView horizontal style={styles.filterContainer} contentContainerStyle={styles.filterContentContainer}>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={[styles.filterButton, selectedSessionTime === "9:00 AM - 12:00 PM" && styles.activeFilterButton]}
           onPress={() => setSelectedSessionTime("9:00 AM - 12:00 PM")}
         >
           <Text style={styles.filterButtonText}>Morning Session</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedSessionTime("1:00 PM - 4:00 PM")}
+          style={[styles.filterButton, selectedSessionTime === "1:00 PM - 9:00 PM" && styles.activeFilterButton]}
+          onPress={() => setSelectedSessionTime("1:00 PM - 9:00 PM")}
         >
           <Text style={styles.filterButtonText}>Afternoon Session</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={[styles.filterButton, selectedPopulation === 1000 && styles.activeFilterButton]}
           onPress={() => setSelectedPopulation(1000)}
         >
           <Text style={styles.filterButtonText}>Population ≥ 1000</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedDistance(10)}
-        >
-          <Text style={styles.filterButtonText}>Distance ≤ 10 km</Text>
-        </TouchableOpacity>
+      
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => {
@@ -214,15 +209,15 @@ const GovtHomeScreen = () => {
             <Text style={styles.campDetails}>
               Population to be Covered: {item.Population_to_be_covered}
             </Text>
-            <Text style={styles.campDetails}>
+            {/* <Text style={styles.campDetails}>
               Distance to be Covered: {item.Distance_to_be_covered} km
-            </Text>
-            <TouchableOpacity
+            </Text> */}
+            {/* <TouchableOpacity
               style={styles.pdfButton}
               onPress={() => handleViewPDF(item.Source_PDF)}
             >
               <Text style={styles.buttonText}>View PDF</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         )}
       />
@@ -236,33 +231,30 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#E8F5E9",
   },
-  navbarContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 5,
+  searchContainer: {
     marginBottom: 10,
-    elevation: 3,
   },
   searchBox: {
-    flex: 1,
     borderWidth: 1,
     borderColor: "#2E7D32",
     borderRadius: 5,
     padding: 10,
-    marginLeft: 10,
     backgroundColor: "#FFF",
   },
   filterContainer: {
-    marginBottom: 10,
+    marginBottom: 20,
+  },
+  filterContentContainer: {
+    paddingVertical: 0,
   },
   filterButton: {
     backgroundColor: "#2E7D32",
     padding: 10,
     borderRadius: 5,
     marginRight: 10,
+  },
+  activeFilterButton: {
+    backgroundColor: "#1B5E20",
   },
   filterButtonText: {
     color: "#FFF",
