@@ -175,7 +175,7 @@ const HomeScreen = () => {
   };
 
   const handleOpenMap = async (latitude: number, longitude: number) => {
-    const url = https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude};
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
     try {
       await Linking.openURL(url);
     } catch (error) {
@@ -184,7 +184,7 @@ const HomeScreen = () => {
   };
 
   const handleRegister = (campId: string) => {
-    router.push(../Screens/UserRegister?campId=${campId});
+    router.push(`../Screens/UserRegister?campId=${campId}`);
   };
 
   const handleWebsiteLink = (link: string) => {
@@ -295,7 +295,7 @@ const HomeScreen = () => {
     return (
       <View style={styles.card}>
         <Image
-          source={{ uri: https://picsum.photos/seed/${item.id}/400/200 }}
+          source={{ uri: `https://picsum.photos/seed/${item.id}/400/200` }}
           style={styles.cardImage}
         />
         <View style={styles.cardContent}>
@@ -367,7 +367,7 @@ const HomeScreen = () => {
               </View>
               
               <WebView
-                source={{ uri: https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${item.longitude},${item.latitude}&zoom=14&marker=lonlat:${item.longitude},${item.latitude};color:%23ff0000;size:medium&apiKey=0358f75d36084c9089636544e0aeed50 }}
+                source={{ uri: `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${item.longitude},${item.latitude}&zoom=14&marker=lonlat:${item.longitude},${item.latitude};color:%23ff0000;size:medium&apiKey=0358f75d36084c9089636544e0aeed50` }}
                 style={styles.map}
               />
               
@@ -475,7 +475,7 @@ const HomeScreen = () => {
           )}
           
           {selectedLocations.map((location, index) => (
-            <View key={loc-${index}} style={styles.filterChip}>
+            <View key={`loc-${index}`} style={styles.filterChip}>
               <Text style={styles.filterChipText}>{location}</Text>
               <TouchableOpacity onPress={() => 
                 setSelectedLocations(selectedLocations.filter((loc) => loc !== location))
@@ -595,7 +595,7 @@ const HomeScreen = () => {
               <Feather name="calendar" size={16} color="#555" />
               <Text style={styles.datePickerText}>
                 {dateFrom && dateTo
-                  ? ${formatDate(dateFrom)} - ${formatDate(dateTo)}
+                  ? `${formatDate(dateFrom)} - ${formatDate(dateTo)}`
                   : "Select Date Range"}
               </Text>
             </TouchableOpacity>
