@@ -65,11 +65,11 @@ const GovtHomeScreen = () => {
             Area_staff_involved: data.Area_staff_involved,
             Camp_Day: data.Camp_Day,
             Camp_Site: data.Camp_Site,
-            Distance_to_be_covered: data.Distance_to_be_covered,
+            // Distance_to_be_covered: data.Distance_to_be_covered,
             Name_of_Villages: data.Name_of_Villages,
             Population_to_be_covered: data.Population_to_be_covered,
             Session_Time: data.Session_Time,
-            Source_PDF: data.Source_PDF,
+            // Source_PDF: data.Source_PDF,
           } as GovtCamp;
         });
         allCamps = [...allCamps, ...campsData];
@@ -179,12 +179,7 @@ const GovtHomeScreen = () => {
         >
           <Text style={styles.filterButtonText}>Population ≥ 1000</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedDistance(10)}
-        >
-          <Text style={styles.filterButtonText}>Distance ≤ 10 km</Text>
-        </TouchableOpacity>
+      
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => {
@@ -214,15 +209,8 @@ const GovtHomeScreen = () => {
             <Text style={styles.campDetails}>
               Population to be Covered: {item.Population_to_be_covered}
             </Text>
-            <Text style={styles.campDetails}>
-              Distance to be Covered: {item.Distance_to_be_covered} km
-            </Text>
-            <TouchableOpacity
-              style={styles.pdfButton}
-              onPress={() => handleViewPDF(item.Source_PDF)}
-            >
-              <Text style={styles.buttonText}>View PDF</Text>
-            </TouchableOpacity>
+          
+           
           </View>
         )}
       />
