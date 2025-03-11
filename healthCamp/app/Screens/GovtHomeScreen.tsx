@@ -150,7 +150,7 @@ const GovtHomeScreen = () => {
       <Navbar />
 
       {/* Search and Filter UI */}
-      <View style={styles.navbarContainer}>
+      <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchBox}
           placeholder="Search by camp site or village..."
@@ -160,21 +160,21 @@ const GovtHomeScreen = () => {
       </View>
 
       {/* Filter Options */}
-      <ScrollView horizontal style={styles.filterContainer}>
+      <ScrollView horizontal style={styles.filterContainer} contentContainerStyle={styles.filterContentContainer}>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={[styles.filterButton, selectedSessionTime === "9:00 AM - 12:00 PM" && styles.activeFilterButton]}
           onPress={() => setSelectedSessionTime("9:00 AM - 12:00 PM")}
         >
           <Text style={styles.filterButtonText}>Morning Session</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setSelectedSessionTime("1:00 PM - 4:00 PM")}
+          style={[styles.filterButton, selectedSessionTime === "1:00 PM - 9:00 PM" && styles.activeFilterButton]}
+          onPress={() => setSelectedSessionTime("1:00 PM - 9:00 PM")}
         >
           <Text style={styles.filterButtonText}>Afternoon Session</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={[styles.filterButton, selectedPopulation === 1000 && styles.activeFilterButton]}
           onPress={() => setSelectedPopulation(1000)}
         >
           <Text style={styles.filterButtonText}>Population ≥ 1000</Text>
@@ -209,8 +209,6 @@ const GovtHomeScreen = () => {
             <Text style={styles.campDetails}>
               Population to be Covered: {item.Population_to_be_covered}
             </Text>
-          
-           
           </View>
         )}
       />
@@ -224,33 +222,30 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#E8F5E9",
   },
-  navbarContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 5,
+  searchContainer: {
     marginBottom: 10,
-    elevation: 3,
   },
   searchBox: {
-    flex: 1,
     borderWidth: 1,
     borderColor: "#2E7D32",
     borderRadius: 5,
     padding: 10,
-    marginLeft: 10,
     backgroundColor: "#FFF",
   },
   filterContainer: {
-    marginBottom: 10,
+    marginBottom: 20,
+  },
+  filterContentContainer: {
+    paddingVertical: 0,
   },
   filterButton: {
     backgroundColor: "#2E7D32",
     padding: 10,
     borderRadius: 5,
     marginRight: 10,
+  },
+  activeFilterButton: {
+    backgroundColor: "#1B5E20",
   },
   filterButtonText: {
     color: "#FFF",
