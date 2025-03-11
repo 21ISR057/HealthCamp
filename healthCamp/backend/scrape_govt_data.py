@@ -105,7 +105,7 @@ for district, pdf_url in pdf_urls.items():
                     session_time = "9:00 AM - 12:00 PM" if "FN" in session_type else "1:00 PM - 9:00 PM"
                     
                     data = {
-                        "Camp_Day": f"{day_str} ({camp_date})",
+                        "Camp_Day": f"{day_str}",
                         "Session_Time": session_time,
                         "Camp_Site": camp_site,
                         "Name_of_Villages": village,
