@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import { db } from "../../../constants/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { db, auth } from "../../../constants/firebase";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { useRouter } from "expo-router";
 
 interface Complaint {
@@ -21,8 +21,18 @@ const ViewComplaintsScreen: React.FC = () => {
   }, []);
 
   const fetchComplaints = async () => {
-    const querySnapshot = await getDocs(collection(db, "complaints"));
-    const complaintsData: Complaint[] = querySnapshot.docs.map((doc) => {
+    const adminId = auth.currentUser?.uid; // Get the logged-in admin's ID
+    if (!adminId) return;
+
+    // Fetch health camps created by the admin
+    const healthCampsQuery = query(collection(db, "healthCamps"), where("adminId", "==", adminId));
+    const healthCampsSnapshot = await getDocs(healthCampsQuery);
+    const healthCampNames = healthCampsSnapshot.docs.map((doc) => doc.data().healthCampName);
+
+    // Fetch complaints for these health camps
+    const complaintsQuery = query(collection(db, "complaints"), where("healthCampName", "in", healthCampNames));
+    const complaintsSnapshot = await getDocs(complaintsQuery);
+    const complaintsData: Complaint[] = complaintsSnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
