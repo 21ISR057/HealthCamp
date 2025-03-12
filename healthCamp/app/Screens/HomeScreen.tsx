@@ -1,25 +1,12 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Linking,
-  Share,
-  Modal,
-  TextInput,
-  Alert,
-  Image,
-  StatusBar,
-} from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Modal, TextInput, Alert, Image, StatusBar } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import { collection, getDocs, Timestamp, addDoc, query, where } from "firebase/firestore";
 import { db, auth } from "../../constants/firebase";
 import { WebView } from "react-native-webview";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import Navbar from "../../components/Navbar"; // Update this path as needed for your project structure
+import Navbar from "../../components/Navbar";
 
 interface HealthCamp {
   id: string;
@@ -35,6 +22,7 @@ interface HealthCamp {
   latitude: number;
   longitude: number;
   registrationUrl: string;
+  averageRating?: number;
 }
 
 interface User {
@@ -58,19 +46,16 @@ const HomeScreen = () => {
   const [localCamps, setLocalCamps] = useState<HealthCamp[]>([]);
   const [hasNotification, setHasNotification] = useState<boolean>(false);
   const [selectedLocations, setSelectedLocations] = useState<string[]>([]);
-  
-  // States for Feedback Modal
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
-  
-  // States for Complaint Modal
+  const [feedbackRating, setFeedbackRating] = useState<number>(0);
   const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [complaintEmail, setComplaintEmail] = useState("");
   const [complaintText, setComplaintText] = useState("");
   const [showOptionsMenu, setShowOptionsMenu] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<string>("date"); // Options: "date", "rating"
 
-  // Fetch user locality from Firestore
   const fetchUserLocality = async () => {
     try {
       const user = auth.currentUser;
@@ -87,15 +72,29 @@ const HomeScreen = () => {
     }
   };
 
-  // Fetch health camps from Firestore
   const fetchCamps = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "healthCamps"));
-      const campsData: HealthCamp[] = querySnapshot.docs.map((doc) => {
+      const campsData: HealthCamp[] = await Promise.all(querySnapshot.docs.map(async (doc) => {
         const data = doc.data();
         const date = data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date || new Date());
         const timeFrom = data.timeFrom instanceof Timestamp ? data.timeFrom.toDate() : new Date(data.timeFrom || new Date());
         const timeTo = data.timeTo instanceof Timestamp ? data.timeTo.toDate() : new Date(data.timeTo || new Date());
+
+        const feedbacksQuery1 = query(collection(db, "feedbacks"), where("healthCampName", "==", data.healthCampName));
+        const feedbacksQuery2 = query(collection(db, "feedbacks"), where("campName", "==", data.healthCampName));
+        
+        const [feedbacksSnapshot1, feedbacksSnapshot2] = await Promise.all([
+          getDocs(feedbacksQuery1),
+          getDocs(feedbacksQuery2)
+        ]);
+        
+        const ratings1 = feedbacksSnapshot1.docs.map((doc) => doc.data().rating || 0);
+        const ratings2 = feedbacksSnapshot2.docs.map((doc) => doc.data().rating || 0);
+        const allRatings = [...ratings1, ...ratings2];
+        
+        const averageRating = allRatings.length > 0 ? 
+          (allRatings.reduce((a, b) => a + b, 0) / allRatings.length) : 0;
 
         return {
           id: doc.id,
@@ -111,13 +110,13 @@ const HomeScreen = () => {
           latitude: data.latitude,
           longitude: data.longitude,
           registrationUrl: data.registrationUrl,
+          averageRating,
         } as HealthCamp;
-      });
+      }));
       
       setCamps(campsData);
       setFilteredCamps(campsData);
       
-      // Find camps in user's locality
       if (userLocality) {
         const matchingCamps = campsData.filter(camp => 
           camp.location.toLowerCase() === userLocality.toLowerCase() && isCampActive(camp.date)
@@ -140,7 +139,7 @@ const HomeScreen = () => {
 
   useEffect(() => {
     filterCamps();
-  }, [searchQuery, dateFrom, dateTo, selectedLocations, camps]);
+  }, [searchQuery, dateFrom, dateTo, selectedLocations, camps, sortBy]);
 
   const isCampActive = (campDate: Date) => {
     const today = new Date();
@@ -169,6 +168,14 @@ const HomeScreen = () => {
       filtered = filtered.filter((camp) =>
         selectedLocations.includes(camp.location)
       );
+    }
+
+    // Sort the filtered camps
+    if (sortBy === "rating") {
+      filtered = [...filtered].sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+    } else {
+      // Default sort by date (upcoming first)
+      filtered = [...filtered].sort((a, b) => a.date.getTime() - b.date.getTime());
     }
 
     setFilteredCamps(filtered);
@@ -208,12 +215,10 @@ const HomeScreen = () => {
     setFilteredCamps(camps.filter(camp => isCampActive(camp.date)));
     setShowFilterModal(false);
   };
-  
-  // Handle sending feedback
+
   const handleSendFeedback = async () => {
-    // Validate inputs
-    if (!feedbackEmail || !feedbackText) {
-      Alert.alert("Error", "Please fill in all fields");
+    if (!feedbackEmail || !feedbackText || feedbackRating === 0) {
+      Alert.alert("Error", "Please fill in all fields and provide a rating");
       return;
     }
     
@@ -222,21 +227,23 @@ const HomeScreen = () => {
         const selectedCamp = camps.find(camp => camp.id === selectedCampId);
         
         if (selectedCamp) {
-          // Add feedback to Firestore collection
           await addDoc(collection(db, "feedbacks"), {
             email: feedbackEmail,
             feedback: feedbackText,
             campId: selectedCampId,
             campName: selectedCamp.healthCampName,
-            timestamp: Timestamp.now()
+            healthCampName: selectedCamp.healthCampName,
+            timestamp: Timestamp.now(),
+            rating: feedbackRating,
           });
           
           Alert.alert("Success", "Your feedback has been submitted successfully");
           
-          // Reset fields and close modal
           setFeedbackEmail("");
           setFeedbackText("");
+          setFeedbackRating(0);
           setShowFeedbackModal(false);
+          fetchCamps();
         }
       } catch (error) {
         console.error("Error sending feedback:", error);
@@ -244,10 +251,8 @@ const HomeScreen = () => {
       }
     }
   };
-  
-  // Handle raising a complaint
+
   const handleRaiseComplaint = async () => {
-    // Validate inputs
     if (!complaintEmail || !complaintText) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -258,7 +263,6 @@ const HomeScreen = () => {
         const selectedCamp = camps.find(camp => camp.id === selectedCampId);
         
         if (selectedCamp) {
-          // Add complaint to Firestore collection
           await addDoc(collection(db, "complaints"), {
             email: complaintEmail,
             complaint: complaintText,
@@ -269,7 +273,6 @@ const HomeScreen = () => {
           
           Alert.alert("Success", "Your complaint has been submitted successfully");
           
-          // Reset fields and close modal
           setComplaintEmail("");
           setComplaintText("");
           setShowComplaintModal(false);
@@ -280,8 +283,7 @@ const HomeScreen = () => {
       }
     }
   };
-  
-  // Handle showing options menu
+
   const toggleOptionsMenu = (campId: string) => {
     if (showOptionsMenu === campId) {
       setShowOptionsMenu(null);
@@ -289,6 +291,21 @@ const HomeScreen = () => {
       setShowOptionsMenu(campId);
       setSelectedCampId(campId);
     }
+  };
+
+  const renderRating = (rating: number) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <Feather
+          key={i}
+          name={i <= rating ? "star" : "star"}
+          size={16}
+          color={i <= rating ? "#FFD700" : "#CCC"}
+        />
+      );
+    }
+    return <View style={{ flexDirection: "row" }}>{stars}</View>;
   };
 
   const renderCampCard = ({ item }: { item: HealthCamp }) => {
@@ -303,13 +320,20 @@ const HomeScreen = () => {
             <View>
               <Text style={styles.organizationName}>{item.organizationName}</Text>
               <Text style={styles.campName}>{item.healthCampName}</Text>
+              {item.averageRating !== undefined && (
+                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                  {renderRating(item.averageRating)}
+                  <Text style={{ marginLeft: 4, fontSize: 12, color: "#888" }}>
+                    ({item.averageRating.toFixed(1)})
+                  </Text>
+                </View>
+              )}
             </View>
             <TouchableOpacity onPress={() => toggleOptionsMenu(item.id)}>
               <Feather name="more-vertical" size={20} color="#555" />
             </TouchableOpacity>
           </View>
           
-          {/* Options Menu */}
           {showOptionsMenu === item.id && (
             <View style={styles.optionsMenu}>
               <TouchableOpacity
@@ -418,10 +442,8 @@ const HomeScreen = () => {
     <View style={styles.container}>
       <StatusBar backgroundColor="#F5F5F5" barStyle="dark-content" />
       
-      {/* Navbar */}
       <Navbar />
       
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Health Camps</Text>
         
@@ -440,7 +462,6 @@ const HomeScreen = () => {
         </View>
       </View>
       
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Feather name="search" size={20} color="#888" />
         <TextInput
@@ -457,7 +478,22 @@ const HomeScreen = () => {
         ) : null}
       </View>
       
-      {/* Selected Filters Display */}
+      <View style={styles.sortContainer}>
+        <Text style={styles.sortLabel}>Sort by:</Text>
+        <TouchableOpacity 
+          style={[styles.sortOption, sortBy === "date" && styles.activeSortOption]} 
+          onPress={() => setSortBy("date")}
+        >
+          <Text style={[styles.sortOptionText, sortBy === "date" && styles.activeSortOptionText]}>Date</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.sortOption, sortBy === "rating" && styles.activeSortOption]} 
+          onPress={() => setSortBy("rating")}
+        >
+          <Text style={[styles.sortOptionText, sortBy === "rating" && styles.activeSortOptionText]}>Rating</Text>
+        </TouchableOpacity>
+      </View>
+      
       {selectedLocations.length > 0 || (dateFrom && dateTo) ? (
         <View style={styles.filterChipsContainer}>
           {dateFrom && dateTo && (
@@ -494,7 +530,6 @@ const HomeScreen = () => {
         </View>
       ) : null}
       
-      {/* Camp List */}
       {filteredCamps.length > 0 ? (
         <FlatList
           data={filteredCamps}
@@ -511,7 +546,6 @@ const HomeScreen = () => {
         </View>
       )}
       
-      {/* Notification Modal */}
       <Modal
         visible={showNotificationModal}
         transparent={true}
@@ -571,7 +605,6 @@ const HomeScreen = () => {
         </View>
       </Modal>
       
-      {/* Filter Modal */}
       <Modal
         visible={showFilterModal}
         transparent={true}
@@ -648,7 +681,6 @@ const HomeScreen = () => {
         </View>
       </Modal>
       
-      {/* Date Picker */}
       {showDatePicker && (
         <DateTimePicker
           value={dateFrom || new Date()}
@@ -659,7 +691,7 @@ const HomeScreen = () => {
             if (selectedDate) {
               if (!dateFrom) {
                 setDateFrom(selectedDate);
-                setShowDatePicker(true); // Show picker again for end date
+                setShowDatePicker(true);
               } else {
                 setDateTo(selectedDate);
               }
@@ -668,7 +700,6 @@ const HomeScreen = () => {
         />
       )}
       
-      {/* Feedback Modal */}
       <Modal
         visible={showFeedbackModal}
         transparent={true}
@@ -707,6 +738,22 @@ const HomeScreen = () => {
                 textAlignVertical="top"
               />
               
+              <Text style={styles.inputLabel}>Rating</Text>
+              <View style={{ flexDirection: "row", marginBottom: 16 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setFeedbackRating(star)}
+                  >
+                    <Feather
+                      name={star <= feedbackRating ? "star" : "star"}
+                      size={24}
+                      color={star <= feedbackRating ? "#FFD700" : "#CCC"}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+              
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSendFeedback}
@@ -718,7 +765,6 @@ const HomeScreen = () => {
         </View>
       </Modal>
       
-      {/* Complaint Modal */}
       <Modal
         visible={showComplaintModal}
         transparent={true}
@@ -829,6 +875,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#333",
   },
+  sortContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  sortLabel: {
+    fontSize: 14,
+    color: "#555",
+    marginRight: 10,
+  },
+  sortOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    backgroundColor: "#F0F0F0",
+  },
+  activeSortOption: {
+    backgroundColor: "#2196F3",
+  },
+  sortOptionText: {
+    fontSize: 13,
+    color: "#555",
+  },
+  activeSortOptionText: {
+    color: "#FFF",
+  },
   filterChipsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -888,37 +962,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 8,
   },
   organizationName: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 2,
+    fontSize: 12,
+    color: "#888",
+    textTransform: "uppercase",
   },
   campName: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
+    marginTop: 2,
   },
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginVertical: 4,
   },
   infoText: {
-    marginLeft: 8,
     fontSize: 14,
     color: "#555",
+    marginLeft: 8,
   },
   expandedContent: {
     marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#EFEFEF",
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
-    marginTop: 16,
   },
   description: {
     fontSize: 14,
@@ -927,80 +1004,63 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   map: {
-    width: "100%",
     height: 200,
     marginVertical: 16,
     borderRadius: 8,
     overflow: "hidden",
   },
-  cardActions: {
-    marginTop: 16,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  actionButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#DDD",
-  },
-  actionButtonText: {
-    fontSize: 14,
-    color: "#555",
-  },
-  actionButtons: {
-    flexDirection: "row",
-  },
-  websiteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#3F51B5",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  registerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#4CAF50",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-  },
   mapButton: {
+    backgroundColor: "#2196F3",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FF9800",
     paddingVertical: 10,
     paddingHorizontal: 16,
-    borderRadius: 6,
+    borderRadius: 8,
     marginBottom: 16,
   },
   buttonText: {
     color: "#FFF",
     fontWeight: "500",
-    marginLeft: 6,
+    marginLeft: 8,
   },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
+  cardActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    padding: 32,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#777",
     marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#EFEFEF",
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: "#999",
-    marginTop: 8,
+  actionButton: {
+    paddingVertical: 8,
+  },
+  actionButtonText: {
+    color: "#2196F3",
+    fontWeight: "500",
+  },
+  actionButtons: {
+    flexDirection: "row",
+  },
+  websiteButton: {
+    backgroundColor: "#607D8B",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginRight: 8,
+  },
+  registerButton: {
+    backgroundColor: "#4CAF50",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
   modalOverlay: {
     flex: 1,
@@ -1008,42 +1068,58 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  notificationModal: {
-    backgroundColor: "#FFF",
-    width: "90%",
-    maxHeight: "80%",
-    borderRadius: 12,
-    overflow: "hidden",
-  },
   filterModal: {
-    backgroundColor: "#FFF",
     width: "90%",
-    borderRadius: 12,
-    padding: 16,
     maxHeight: "80%",
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  notificationModal: {
+    width: "90%",
+    maxHeight: "80%",
+    backgroundColor: "#FFF",
+    borderRadius: 12,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   formModal: {
-    backgroundColor: "#FFF",
     width: "90%",
+    backgroundColor: "#FFF",
     borderRadius: 12,
-    maxHeight: "80%",
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EFEFEF",
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "bold",
     color: "#333",
   },
+  modalContent: {
+    marginBottom: 16,
+  },
   filterLabel: {
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "bold",
     color: "#333",
     marginTop: 16,
     marginBottom: 8,
@@ -1051,32 +1127,30 @@ const styles = StyleSheet.create({
   datePickerButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: "#F0F0F0",
+    padding: 12,
     borderRadius: 8,
     marginBottom: 16,
   },
   datePickerText: {
     marginLeft: 8,
-    fontSize: 14,
     color: "#555",
   },
   locationOptions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   locationOption: {
-    backgroundColor: "#F5F5F5",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    backgroundColor: "#F0F0F0",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
     marginRight: 8,
     marginBottom: 8,
   },
   selectedLocation: {
-    backgroundColor: "#3F51B5",
+    backgroundColor: "#2196F3",
   },
   locationOptionText: {
     fontSize: 14,
@@ -1092,12 +1166,11 @@ const styles = StyleSheet.create({
   },
   clearFiltersButton: {
     flex: 1,
+    backgroundColor: "#F0F0F0",
     paddingVertical: 12,
-    marginRight: 8,
     borderRadius: 8,
-    backgroundColor: "#F5F5F5",
     alignItems: "center",
-    justifyContent: "center",
+    marginRight: 8,
   },
   clearFiltersText: {
     color: "#555",
@@ -1105,19 +1178,34 @@ const styles = StyleSheet.create({
   },
   applyFiltersButton: {
     flex: 1,
+    backgroundColor: "#2196F3",
     paddingVertical: 12,
-    marginLeft: 8,
     borderRadius: 8,
-    backgroundColor: "#3F51B5",
     alignItems: "center",
-    justifyContent: "center",
   },
   applyFiltersText: {
     color: "#FFF",
     fontWeight: "500",
   },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#555",
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: "#888",
+    marginTop: 8,
+  },
   notificationItem: {
-    padding: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#EFEFEF",
   },
@@ -1126,24 +1214,24 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   notificationTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
     color: "#333",
-    marginBottom: 4,
   },
   notificationCampName: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#555",
-    marginBottom: 4,
+    marginTop: 2,
   },
   notificationDate: {
     fontSize: 12,
     color: "#888",
+    marginTop: 4,
   },
   emptyNotifications: {
-    padding: 32,
     alignItems: "center",
     justifyContent: "center",
+    padding: 20,
   },
   emptyNotificationsText: {
     fontSize: 16,
@@ -1151,10 +1239,42 @@ const styles = StyleSheet.create({
     marginTop: 16,
     textAlign: "center",
   },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: "#F0F0F0",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  textArea: {
+    backgroundColor: "#F0F0F0",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 16,
+    minHeight: 120,
+  },
+  submitButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#FFF",
+    fontWeight: "500",
+    fontSize: 16,
+  },
   optionsMenu: {
     position: "absolute",
-    right: 0,
-    top: 40,
+    right: 16,
+    top: 36,
     backgroundColor: "#FFF",
     borderRadius: 8,
     padding: 8,
@@ -1172,50 +1292,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   optionText: {
-    fontSize: 14,
-    color: "#555",
     marginLeft: 8,
-  },
-  modalContent: {
-    padding: 16,
-  },
-  inputLabel: {
     fontSize: 14,
-    fontWeight: "500",
     color: "#555",
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    marginBottom: 16,
-    color: "#333",
-  },
-  textArea: {
-    backgroundColor: "#F5F5F5",
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 14,
-    marginBottom: 16,
-    height: 120,
-    color: "#333",
-  },
-  submitButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-  },
-  submitButtonText: {
-    color: "#FFF",
-    fontWeight: "500",
-    fontSize: 16,
   }
 });
 
