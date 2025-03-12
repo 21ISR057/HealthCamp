@@ -30,6 +30,7 @@ const Navbar = () => {
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("../Screens/Game/GameScreen")}>
             <Text style={styles.navItem}>🎮 Health Game</Text>
+          </TouchableOpacity>
           <TouchableOpacity onPress={() => router.push("../Screens/GovtHomeScreen")}>
             <Text style={styles.navItem}> Government camps</Text>
           </TouchableOpacity>
