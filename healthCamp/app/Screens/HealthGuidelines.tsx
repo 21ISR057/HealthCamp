@@ -46,7 +46,7 @@ const guidelines: Guideline[] = [
       "Follow prescribed medications properly.",
       "Be aware of common symptoms and seek medical advice when needed."
     ],
-    image: require("../../assets/images/path_to_image1.avif")
+    image: require("../../assets/images/image4.jpg")
   }
 ];
 

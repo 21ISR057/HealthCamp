@@ -1,128 +1,144 @@
-import os
 import requests
-import fitz  # PyMuPDF
+from bs4 import BeautifulSoup
 import firebase_admin
 from firebase_admin import credentials, firestore
-from datetime import datetime, timedelta
-import re
+import pdfplumber  # Library to extract text from PDFs
+import re  # Regular expressions for parsing text
 
-# ✅ Load Firebase credentials from a local JSON file
-FIREBASE_CREDENTIALS_PATH = "serviceAccountKey.json"  # 🔹 Change to your actual file path
+# Base URL of the website
+BASE_URL = "https://www.nhm.tn.gov.in"
 
-if os.path.exists(FIREBASE_CREDENTIALS_PATH):
-    if not firebase_admin._apps:
-        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
-        firebase_admin.initialize_app(cred)
-else:
-    raise FileNotFoundError("❌ Firebase credentials file not found!")
+# Step 1: Scrape the Data from the Website
+def scrape_website(url):
+    # Send a GET request to the webpage
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-# ✅ Connect to Firestore
-db = firestore.client()
+    # Find the table containing the district data
+    table = soup.find('table')
 
-# ✅ Function to get the 1st, 2nd, 3rd, and 4th occurrence of a given weekday in a specific year and month
-def get_weekday_occurrences(year, month):
-    first_day = datetime(year, month, 1)
-    weekday_dates = {}
-    
-    for i in range(31):  # Covers the entire month
-        current_date = first_day + timedelta(days=i)
-        if current_date.month != month:
-            break  # Stop when next month starts
-        
-        weekday_name = current_date.strftime("%A")
-        if weekday_name not in weekday_dates:
-            weekday_dates[weekday_name] = []
-        
-        weekday_dates[weekday_name].append(current_date.strftime("%d-%m-%Y"))
+    # Initialize a dictionary to store the data
+    district_data = {}
 
-    return weekday_dates
+    # Iterate through the table rows
+    for row in table.find_all('tr')[1:]:  # Skip the header row
+        columns = row.find_all('td')
+        if len(columns) < 3:  # Ensure there are at least 3 columns
+            continue
 
-# ✅ Get all 1st, 2nd, 3rd, and 4th occurrences for January 2025
-weekday_occurrences = get_weekday_occurrences(2025, 1)
+        # Extract district name
+        district_name = columns[1].text.strip()
 
-# ✅ Dictionary of Districts & Corresponding PDFs
-pdf_urls = {
-    "erode": "https://www.nhm.tn.gov.in/sites/default/files/documents/erode.pdf",
-    "coimbatore": "https://www.nhm.tn.gov.in/sites/default/files/documents/coimbatore.pdf",
-    "palani": "https://www.nhm.tn.gov.in/sites/default/files/documents/palani.pdf"
-}
+        # Extract the "View Document" link
+        view_document_tag = columns[2].find('a')  # Find the <a> tag in the third column
+        if view_document_tag and 'href' in view_document_tag.attrs:
+            view_document_link = view_document_tag['href']
 
-# ✅ Process each district
-for district, pdf_url in pdf_urls.items():
-    pdf_filename = pdf_url.split("/")[-1]  # Extract filename
-    response = requests.get(pdf_url)
+            # Convert relative URL to absolute URL
+            if view_document_link.startswith('/'):
+                view_document_link = BASE_URL + view_document_link
 
-    if response.status_code == 200:
-        with open(pdf_filename, "wb") as file:
-            file.write(response.content)
-        print(f"✅ {pdf_filename} downloaded successfully!")
+            # Download the PDF and extract its content
+            print(f"Downloading PDF for district: {district_name}")
+            pdf_content = extract_pdf_content(view_document_link)
+            if pdf_content:
+                # Parse the PDF content to extract the required fields
+                parsed_data = parse_pdf_content(pdf_content)
+                if parsed_data:
+                    district_data[district_name] = parsed_data
+                else:
+                    print(f"Failed to parse PDF content for district: {district_name}")
+            else:
+                print(f"Failed to extract content from PDF for district: {district_name}")
+        else:
+            print(f"No 'View Document' link found for district: {district_name}")
 
-        # ✅ Open the PDF
-        doc = fitz.open(pdf_filename)
-        data_list = []
-        count = 0  # ✅ Limit to first 10 records
+    return district_data
 
-        # ✅ Extract text from each page
-        for page in doc:
-            if count >= 10:
-                break  # ✅ Stop after 10 records
-            
-            text = page.get_text("text")
-            lines = [line.strip() for line in text.split("\n") if line.strip()]  # Remove blank lines
-            
-            # ✅ Extract structured data using regex filtering
-            pattern = r"(\d{1,2}\s?[A-Za-z]+)\s+(FN|AN)\s+(.+?)\s+(.+?)\s+(\d+(\.\d+)?)\s+(\d+)\s+(.+)"
-            matches = re.findall(pattern, text)
+# Step 2: Extract PDF Content
+def extract_pdf_content(pdf_url):
+    try:
+        # Download the PDF file
+        response = requests.get(pdf_url)
+        with open("temp.pdf", "wb") as f:
+            f.write(response.content)
 
-            for match in matches:
-                if count >= 10:
-                    break  # ✅ Stop after 10 records
-                
-                try:
-                    day_str, session_type, camp_site, village, distance, _, population, staff = match
-                    
-                    # ✅ Extract the numeric occurrence (1st, 2nd, etc.) and the day name (Monday, Tuesday, etc.)
-                    match_parts = re.match(r"(\d{1,2})(st|nd|rd|th)\s(\w+)", day_str)
-                    if match_parts:
-                        week_number, _, weekday = match_parts.groups()
-                        week_number = int(week_number)
-                        weekday = weekday.capitalize()  # Ensure format matches dictionary keys
+        # Extract text from the PDF
+        with pdfplumber.open("temp.pdf") as pdf:
+            text = ""
+            for page in pdf.pages:
+                text += page.extract_text()  # Extract text from each page
 
-                        # ✅ Get the corresponding date for that week
-                        if weekday in weekday_occurrences and 1 <= week_number <= len(weekday_occurrences[weekday]):
-                            camp_date = weekday_occurrences[weekday][week_number - 1]
-                        else:
-                            camp_date = "Unknown"
-                    else:
-                        camp_date = "Unknown"
+        return text
+    except Exception as e:
+        print(f"Error extracting PDF content: {e}")
+        return None
 
-                    # ✅ Compute session time
-                    session_time = "9:00 AM - 12:00 PM" if "FN" in session_type else "1:00 PM - 9:00 PM"
-                    
-                    data = {
-                        "Camp_Day": f"{day_str}",
-                        "Session_Time": session_time,
-                        "Camp_Site": camp_site,
-                        "Name_of_Villages": village,
-                        "Distance_to_be_covered": float(distance),  # ✅ Ensures distance is stored as a float
-                        "Population_to_be_covered": int(population),  # ✅ Ensures population is stored as an integer
-                        "Area_staff_involved": staff,
-                        "Source_PDF": pdf_url
-                    }
-                    
-                    data_list.append(data)
-                    count += 1  # ✅ Increment count
-                except ValueError:
-                    print(f"⚠️ Skipping incorrect row format in {pdf_filename}")
+# Step 3: Parse PDF Content
+def parse_pdf_content(pdf_content):
+    try:
+        # Split the PDF content into lines
+        lines = pdf_content.split('\n')
 
-        print(f"✅ Extracted first 10 records from {pdf_filename}!")
+        # Initialize a list to store the parsed data
+        parsed_data = []
 
-        # ✅ Store data in Firestore under `govtdata -> district -> PDFs`
-        district_ref = db.collection("govtdata").document(district)  # Parent document
-        pdf_collection_ref = district_ref.collection("PDFs")  # Subcollection for PDFs
+        # Iterate through the lines and extract the required fields
+        for line in lines:
+            # Use regex to extract the fields
+            match = re.match(
+                r"(\d+\w+\s+\w+)\s+(FN|AN)\s+(.+?)\s+(.+?)\s+(\d+\.?\d*\s*\w*)\s+(\d+)\s+(.+)",
+                line
+            )
+            if match:
+                camp_day, fn_an, camp_site, village_name, distance, population, area_staff = match.groups()
+                parsed_data.append({
+                    "CAMP DAY": camp_day.strip(),
+                    "FN / AN": fn_an.strip(),
+                    "Camp Site": camp_site.strip(),
+                    "Name of the Village to be covered": village_name.strip(),
+                    "Distance of the Villages covered from the Camp site": distance.strip(),
+                    "Population to be covered": population.strip(),
+                    "Area Staff to be involved": area_staff.strip(),
+                })
 
-        for data in data_list:
-            doc_ref = pdf_collection_ref.add(data)  # ✅ Store as new document
-            print(f"✅ Stored row in {district} → PDFs with ID: {doc_ref[1].id}")
+        return parsed_data
+    except Exception as e:
+        print(f"Error parsing PDF content: {e}")
+        return None
 
-print("🎉 First 10 records from each PDF successfully stored in Firebase!")
+# Step 4: Store the Data in Firebase
+def store_in_firebase(district_data):
+    # Initialize Firebase Admin SDK
+    cred = credentials.Certificate('serviceAccountKey.json')  # Replace with your Firebase credentials file path
+    firebase_admin.initialize_app(cred)
+
+    # Initialize Firestore
+    db = firestore.client()
+
+    # Reference to the govtdata collection
+    govtdata_ref = db.collection('govtdata')
+
+    # Store the scraped data in Firebase
+    for district, data in district_data.items():
+        # Add the data to the govtdata collection with district name as document ID
+        govtdata_ref.document(district).set({
+            "camps": data
+        })
+
+    print("Data successfully stored in Firebase!")
+
+# Main Function
+def main():
+    # URL of the webpage
+    url = "https://www.nhm.tn.gov.in/en/hospital-on-wheels-hows-programme-ftp"
+
+    # Scrape the data
+    district_data = scrape_website(url)
+
+    # Store the data in Firebase
+    store_in_firebase(district_data)
+
+# Run the program
+if __name__ == "__main__":
+    main()
