@@ -37,5 +37,4 @@ yarn-error.*
 
 app-example
 
-# healthCamp/backend/firebase-admin-sdk.json
-# healthCamp/backend/serviceAccountKey.json
+
