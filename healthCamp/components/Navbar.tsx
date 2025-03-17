@@ -29,9 +29,6 @@ const Navbar = () => {
           <TouchableOpacity onPress={() => router.push("../Screens/GovtHomeScreen")}>
             <Text style={styles.navItem}> Government camps</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push("../Screens/HealthGuidelines")}>
-            <Text style={styles.navItem}> Guidelines</Text>
-          </TouchableOpacity>
         </View>
       )}
     </View>
