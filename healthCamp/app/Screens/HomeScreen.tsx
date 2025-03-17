@@ -22,6 +22,7 @@ interface HealthCamp {
   latitude: number;
   longitude: number;
   registrationUrl: string;
+  averageRating?: number;
 }
 
 interface User {
