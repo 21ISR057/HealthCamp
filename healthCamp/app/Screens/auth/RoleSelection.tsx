@@ -40,7 +40,7 @@ export default function RoleSelectionScreen() {
       if (storedRole === 'user') {
         path = '/Screens/auth/RegisterScreenUser';
       } else if (storedRole === 'admin') {
-        path = '/Screens/auth/RegisterAdmin';
+        path ='/Screens/auth/RegisterAdmin' ;
       }
 
       if (path) {

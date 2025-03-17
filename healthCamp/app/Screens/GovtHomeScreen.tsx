@@ -50,33 +50,46 @@ const GovtHomeScreen = () => {
 
   const fetchGovtCamps = async () => {
     try {
-      // List of districts to fetch data from
-      const districts = ["erode", "coimbatore", "palani"];
+      // Reference to the govtdata collection
+      const govtdataRef = collection(db, "govtdata");
+      const querySnapshot = await getDocs(govtdataRef);
+
       let allCamps: GovtCamp[] = [];
 
-      // Fetch data from each district's PDFs subcollection
-      for (const district of districts) {
-        const pdfsRef = collection(db, "govtdata", district, "PDFs");
-        const querySnapshot = await getDocs(pdfsRef);
-        const campsData: GovtCamp[] = querySnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            Area_staff_involved: data.Area_staff_involved,
-            Camp_Day: data.Camp_Day,
-            Camp_Site: data.Camp_Site,
-            // Distance_to_be_covered: data.Distance_to_be_covered,
-            Name_of_Villages: data.Name_of_Villages,
-            Population_to_be_covered: data.Population_to_be_covered,
-            Session_Time: data.Session_Time,
-            // Source_PDF: data.Source_PDF,
-          } as GovtCamp;
-        });
-        allCamps = [...allCamps, ...campsData];
-      }
+      // Iterate through each district document
+      querySnapshot.forEach((doc) => {
+        const districtData = doc.data();
+        console.log("District Data:", districtData); // Debug: Check the structure of districtData
 
-      setCamps(allCamps);
-      setFilteredCamps(allCamps);
+        if (districtData.camps && Array.isArray(districtData.camps)) {
+          // Add each camp to the allCamps array
+          districtData.camps.forEach((camp: any) => {
+            console.log("Camp Data:", camp); // Debug: Check the structure of each camp
+
+            allCamps.push({
+              id: camp.id || doc.id, // Use camp ID or district ID as fallback
+              Area_staff_involved: camp["Area Staff to be involved"] || "N/A",
+              Camp_Day: camp["CAMP DAY"] || "N/A",
+              Camp_Site: camp["Camp Site"] || "N/A",
+              Distance_to_be_covered: parseFloat(camp["Distance of the Villages covered from the Camp site"]) || 0,
+              Name_of_Villages: camp["Name of the Village to be covered"] || "N/A",
+              Population_to_be_covered: parseInt(camp["Population to be covered"]) || 0,
+              Session_Time: camp["FN / AN"] || "N/A",
+              Source_PDF: "N/A", // Add this field if it exists in Firestore
+            });
+          });
+        }
+      });
+
+      // Remove duplicates based on the `id` field
+      const uniqueCamps = Array.from(new Set(allCamps.map((camp) => camp.id)))
+        .map((id) => allCamps.find((camp) => camp.id === id))
+        .filter((camp): camp is GovtCamp => camp !== undefined); // Ensure no undefined values
+
+      console.log("Unique Camps:", uniqueCamps); // Debug: Check final camps array
+
+      setCamps(uniqueCamps);
+      setFilteredCamps(uniqueCamps);
       setError(null);
     } catch (error) {
       console.error("Error fetching government camps:", error);
@@ -162,14 +175,14 @@ const GovtHomeScreen = () => {
       {/* Filter Options */}
       <ScrollView horizontal style={styles.filterContainer} contentContainerStyle={styles.filterContentContainer}>
         <TouchableOpacity
-          style={[styles.filterButton, selectedSessionTime === "9:00 AM - 12:00 PM" && styles.activeFilterButton]}
-          onPress={() => setSelectedSessionTime("9:00 AM - 12:00 PM")}
+          style={[styles.filterButton, selectedSessionTime === "FN" && styles.activeFilterButton]}
+          onPress={() => setSelectedSessionTime("FN")}
         >
           <Text style={styles.filterButtonText}>Morning Session</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.filterButton, selectedSessionTime === "1:00 PM - 9:00 PM" && styles.activeFilterButton]}
-          onPress={() => setSelectedSessionTime("1:00 PM - 9:00 PM")}
+          style={[styles.filterButton, selectedSessionTime === "AN" && styles.activeFilterButton]}
+          onPress={() => setSelectedSessionTime("AN")}
         >
           <Text style={styles.filterButtonText}>Afternoon Session</Text>
         </TouchableOpacity>
@@ -179,7 +192,6 @@ const GovtHomeScreen = () => {
         >
           <Text style={styles.filterButtonText}>Population ≥ 1000</Text>
         </TouchableOpacity>
-      
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => {
@@ -195,7 +207,7 @@ const GovtHomeScreen = () => {
       {/* Camp List */}
       <FlatList
         data={filteredCamps}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id} // Ensure `item.id` is unique
         renderItem={({ item }) => (
           <View style={styles.campItem}>
             <Image
@@ -234,15 +246,19 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     marginBottom: 20,
+    height: 50, // Set a fixed height for the filter container
   },
   filterContentContainer: {
-    paddingVertical: 0,
+    alignItems: "center", // Center buttons vertically
+    paddingHorizontal: 10, // Add horizontal padding
   },
   filterButton: {
     backgroundColor: "#2E7D32",
     padding: 10,
     borderRadius: 5,
     marginRight: 10,
+    justifyContent: "center", // Center text vertically
+    alignItems: "center", // Center text horizontally
   },
   activeFilterButton: {
     backgroundColor: "#1B5E20",
@@ -250,6 +266,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     color: "#FFF",
     fontWeight: "bold",
+    fontSize: 14, // Adjust font size if needed
   },
   campItem: {
     backgroundColor: "#FFF",
@@ -317,5 +334,8 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
 });
+
+
+
 
 export default GovtHomeScreen;
