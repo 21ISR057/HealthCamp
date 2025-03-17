@@ -30,6 +30,11 @@ interface User {
   locality: string;
 }
 
+interface User {
+  id: string;
+  locality: string;
+}
+
 const HomeScreen = () => {
   const router = useRouter();
   const [camps, setCamps] = useState<HealthCamp[]>([]);

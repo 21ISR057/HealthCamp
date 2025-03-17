@@ -7,12 +7,22 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
 import { db, auth } from "../../../constants/firebase";
-import { collection, getDocs, query, where, updateDoc, doc } from "firebase/firestore";
+import { collection, getDocs, query, where, updateDoc, doc, updateDoc, doc } from "firebase/firestore";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from 'expo-sharing';
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import * as FileSystem from "expo-file-system"; // For file system operations
+import * as Sharing from 'expo-sharing'; // For sharing files
 
 interface Registration {
   id: string;
@@ -33,6 +43,18 @@ interface CampReport {
   campName: string;
   totalRegistrations: number;
   verifiedRegistrations: number;
+  verified: boolean; // Add verified field
+}
+
+interface Camp {
+  id: string;
+  healthCampName: string; // Add camp name field
+}
+
+interface CampReport {
+  campName: string;
+  totalRegistrations: number;
+  verifiedRegistrations: number;
 }
 
 const ViewRegistrationsScreen = () => {
@@ -41,6 +63,8 @@ const ViewRegistrationsScreen = () => {
   const [campReports, setCampReports] = useState<CampReport[]>([]);
   const [selectedCamp, setSelectedCamp] = useState<string | null>(null);
   const router = useRouter();
+  const [camps, setCamps] = useState<Camp[]>([]); // Store camp data
+  const [campReports, setCampReports] = useState<CampReport[]>([]); // Store camp reports
 
   useEffect(() => {
     fetchRegistrations();
@@ -62,6 +86,13 @@ const ViewRegistrationsScreen = () => {
     }));
     setCamps(campsData);
 
+    // Store camp data for mapping
+    const campsData: Camp[] = healthCampsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      healthCampName: doc.data().healthCampName,
+    }));
+    setCamps(campsData);
+
     // Fetch registrations for these health camps
     const registrationsQuery = query(collection(db, "registrations"), where("campId", "in", healthCampIds));
     const registrationsSnapshot = await getDocs(registrationsQuery);
@@ -75,6 +106,7 @@ const ViewRegistrationsScreen = () => {
         phone: data.phone,
         createdAt: data.createdAt.toDate(),
         verified: data.verified || false,
+        verified: data.verified || false, // Default to false if not set
       } as Registration;
     });
     setRegistrations(registrationsData);
@@ -173,6 +205,89 @@ const ViewRegistrationsScreen = () => {
         return camp && camp.healthCampName === selectedCamp;
       })
     : registrations;
+
+    // Calculate camp reports
+    const reports: CampReport[] = campsData.map((camp) => {
+      const campRegistrations = registrationsData.filter((reg) => reg.campId === camp.id);
+      const verifiedRegistrations = campRegistrations.filter((reg) => reg.verified).length;
+      return {
+        campName: camp.healthCampName,
+        totalRegistrations: campRegistrations.length,
+        verifiedRegistrations,
+      };
+    });
+    setCampReports(reports);
+  };
+
+  const handleVerify = async (registrationId: string, campId: string) => {
+    try {
+      // Update the registration to mark it as verified
+      const registrationRef = doc(db, "registrations", registrationId);
+      await updateDoc(registrationRef, { verified: true });
+
+      // Update the local state to reflect the verification
+      setRegistrations((prevRegistrations) =>
+        prevRegistrations.map((reg) =>
+          reg.id === registrationId ? { ...reg, verified: true } : reg
+        )
+      );
+
+      // Recalculate camp reports
+      const updatedReports = campReports.map((report) => {
+        if (camps.find((camp) => camp.id === campId)?.healthCampName === report.campName) {
+          return {
+            ...report,
+            verifiedRegistrations: report.verifiedRegistrations + 1,
+          };
+        }
+        return report;
+      });
+      setCampReports(updatedReports);
+
+      Alert.alert("Success", "Registration verified successfully!");
+    } catch (error) {
+      console.error("Error verifying registration:", error);
+      Alert.alert("Error", "Failed to verify registration.");
+    }
+  };
+
+  const generateCSV = () => {
+    let csvContent = "Camp Name,Total Registrations,Verified Registrations\n";
+    campReports.forEach((report) => {
+      csvContent += `${report.campName},${report.totalRegistrations},${report.verifiedRegistrations}\n`;
+    });
+    return csvContent;
+  };
+
+  const downloadCSV = async () => {
+    const csvContent = generateCSV();
+    const fileUri = FileSystem.documentDirectory + "camp_reports.csv";
+
+    try {
+      await FileSystem.writeAsStringAsync(fileUri, csvContent, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      // Check if sharing is available
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert("Sharing is not available on this device.");
+        return;
+      }
+
+      // Share the file
+      await Sharing.shareAsync(fileUri, {
+        mimeType: 'text/csv',
+        dialogTitle: 'Share Camp Report',
+        UTI: 'public.comma-separated-values-text', // iOS only
+      });
+
+      Alert.alert("Success", "CSV file downloaded successfully!");
+    } catch (error) {
+      console.error("Error downloading CSV:", error);
+      Alert.alert("Error", "Failed to download CSV file.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -451,6 +566,151 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#2E7D32",
+    marginBottom: 5,
+  },
+  verifyButton: {
+    backgroundColor: "#2E7D32",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  verifyButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
+  reportContainer: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "#FFF",
+    borderRadius: 5,
+  },
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 10,
+  },
+  reportItem: {
+    marginBottom: 10,
+  },
+  reportText: {
+    fontSize: 14,
+    color: "#555",
+    marginLeft: 8,
+  },
+  verifyButton: {
+    backgroundColor: "#2E7D32",
+    flexDirection: "row",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  verifyButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+    marginLeft: 8,
+  },
+  reportContainer: {
+    backgroundColor: "#FFF",
+    padding: 16,
+    borderRadius: 8,
+    marginTop: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 12,
+  },
+  reportItem: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFEFEF",
+    paddingBottom: 12,
+  },
+  reportCampName: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+  reportStats: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#888",
+    marginBottom: 4,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 5,
+  },
+  verifyButton: {
+    backgroundColor: "#2E7D32",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  verifyButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
+  reportContainer: {
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: "#FFF",
+    borderRadius: 5,
+  },
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2E7D32",
+    marginBottom: 10,
+  },
+  reportItem: {
+    marginBottom: 10,
+  },
+  reportText: {
+    fontSize: 14,
+    color: "#2E7D32",
+  },
+  downloadButton: {
+    backgroundColor: "#2E7D32",
+    padding: 15,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  downloadButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
+  downloadButton: {
+    backgroundColor: "#2E7D32",
+    padding: 15,
+    borderRadius: 5,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  downloadButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
   },
   buttonContainer: {
     flexDirection: "row",
