@@ -11,7 +11,16 @@ import {
   ScrollView,
 } from "react-native";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 import { app } from "../../constants/firebase"; // Ensure correct import
 
 // Define UserData Type
@@ -61,20 +70,32 @@ const ProfileSection = ({
 }: ProfileSectionProps) => (
   <View style={styles.profileContainer}>
     <Image
-      source={{ uri: userData.profileImage || "https://www.w3schools.com/howto/img_avatar.png" }}
+      source={{
+        uri:
+          userData.profileImage ||
+          "https://www.w3schools.com/howto/img_avatar.png",
+      }}
       style={styles.profileImage}
     />
-    <Button title={editMode ? "Cancel" : "Edit Details"} onPress={() => setEditMode(!editMode)} />
+    <Button
+      title={editMode ? "Cancel" : "Edit Details"}
+      onPress={() => setEditMode(!editMode)}
+    />
 
     {Object.entries(userData).map(([key, value]) => (
       <View key={key} style={styles.row}>
-        <Text style={styles.label}>{key.replace(/([A-Z])/g, " $1").trim()}:</Text>
+        <Text style={styles.label}>
+          {key.replace(/([A-Z])/g, " $1").trim()}:
+        </Text>
         {editMode ? (
           <TextInput
             style={styles.input}
             value={String(updatedData[key as keyof UserData] || "")} // Convert to string
             onChangeText={(text) =>
-              setUpdatedData((prev) => ({ ...(prev || {}), [key]: text })) // Fix applied here
+              setUpdatedData((prev: UserData | null) => ({
+                ...(prev || {}),
+                [key]: text,
+              }))
             }
           />
         ) : (
@@ -83,11 +104,17 @@ const ProfileSection = ({
       </View>
     ))}
 
-    {editMode && <Button title="Save Changes" onPress={handleUpdate} color="green" />}
+    {editMode && (
+      <Button title="Save Changes" onPress={handleUpdate} color="green" />
+    )}
   </View>
 );
 
-const CampSection = ({ camps, title, showStatus = false }: CampSectionProps) => (
+const CampSection = ({
+  camps,
+  title,
+  showStatus = false,
+}: CampSectionProps) => (
   <View style={styles.sectionContainer}>
     <Text style={styles.sectionTitle}>{title}</Text>
     {camps.length > 0 ? (
@@ -138,7 +165,10 @@ const UserProfile = () => {
           }
 
           // Fetch user's registered camps
-          const registrationsQuery = query(collection(db, "registrations"), where("email", "==", user.email));
+          const registrationsQuery = query(
+            collection(db, "registrations"),
+            where("email", "==", user.email)
+          );
           const registrationsSnapshot = await getDocs(registrationsQuery);
           const campsData: Camp[] = [];
 
@@ -195,7 +225,9 @@ const UserProfile = () => {
   };
 
   if (loading) {
-    return <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />;
+    return (
+      <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
+    );
   }
 
   if (error) {
@@ -215,7 +247,11 @@ const UserProfile = () => {
         />
       )}
 
-      <CampSection camps={registeredCamps} title="My Registered Camps" showStatus />
+      <CampSection
+        camps={registeredCamps}
+        title="My Registered Camps"
+        showStatus
+      />
       <CampSection camps={verifiedCamps} title="Verified Camps" />
     </ScrollView>
   );

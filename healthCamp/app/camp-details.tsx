@@ -1,5 +1,13 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Linking } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+} from "react-native";
 import { useLocalSearchParams } from "expo-router";
 
 const CampDetails = () => {
@@ -21,8 +29,15 @@ const CampDetails = () => {
   // Function to open Google Maps
   const openMaps = () => {
     if (params.location) {
-      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(params.location)}`;
-      Linking.openURL(url).catch((err) => console.error("Failed to open Maps:", err));
+      const location = Array.isArray(params.location)
+        ? params.location[0]
+        : params.location;
+      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+        location
+      )}`;
+      Linking.openURL(url).catch((err) =>
+        console.error("Failed to open Maps:", err)
+      );
     } else {
       console.error("Location is missing");
     }
@@ -30,40 +45,74 @@ const CampDetails = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+      >
         <View style={styles.innerContainer}>
-          <Image 
-            source={{ uri: Array.isArray(params.image) ? params.image[0] : params.image || "https://via.placeholder.com/200" }} 
-            style={styles.postImage} 
+          <Image
+            source={{
+              uri: Array.isArray(params.image)
+                ? params.image[0]
+                : params.image || "https://via.placeholder.com/200",
+            }}
+            style={styles.postImage}
           />
-          <Text style={styles.postContainer}>{params.campName || "Camp Name Not Available"}</Text>
-          <Text style={styles.postLocation}>📍 {params.location || "Location Not Available"}</Text>
-          
+          <Text style={styles.postContainer}>
+            {params.campName || "Camp Name Not Available"}
+          </Text>
+          <Text style={styles.postLocation}>
+            📍 {params.location || "Location Not Available"}
+          </Text>
+
           <TouchableOpacity style={styles.mapButton} onPress={openMaps}>
             <Text style={styles.mapButtonText}>View Location on Maps</Text>
           </TouchableOpacity>
-  
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>👨‍⚕️ Doctor</Text>
-            <Text style={styles.detailText}>{params.doctorName || "Doctor Name Not Available"}</Text>
-            <Text style={styles.detailText}>{params.doctorDetails || "Doctor Details Not Available"}</Text>
+            <Text style={styles.detailText}>
+              {params.doctorName || "Doctor Name Not Available"}
+            </Text>
+            <Text style={styles.detailText}>
+              {params.doctorDetails || "Doctor Details Not Available"}
+            </Text>
           </View>
-  
+
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>🏥 Medical Facilities</Text>
             {medicalFacilities.length > 0 ? (
-              medicalFacilities.map((facility: string | number | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | null | undefined, index: React.Key | null | undefined) => (
-                <Text key={index} style={styles.detailText}>✅ {facility}</Text>
-              ))
+              medicalFacilities.map(
+                (
+                  facility:
+                    | string
+                    | number
+                    | boolean
+                    | React.ReactElement<
+                        any,
+                        string | React.JSXElementConstructor<any>
+                      >
+                    | Iterable<React.ReactNode>
+                    | React.ReactPortal
+                    | null
+                    | undefined,
+                  index: React.Key | null | undefined
+                ) => (
+                  <Text key={index} style={styles.detailText}>
+                    ✅ {facility}
+                  </Text>
+                )
+              )
             ) : (
-              <Text style={styles.detailText}>No medical facilities available</Text>
+              <Text style={styles.detailText}>
+                No medical facilities available
+              </Text>
             )}
           </View>
         </View>
       </ScrollView>
     </View>
   );
-  
 };
 
 export default CampDetails;
@@ -84,13 +133,13 @@ const styles = StyleSheet.create({
     flexGrow: 1, // Allows the content to grow and align properly
     justifyContent: "center", // Centers vertically
     alignItems: "center", // Centers horizontally
-    width: "100%", 
+    width: "100%",
     padding: 20,
   },
   innerContainer: {
     width: "100%",
-    height:"90%", 
-    maxWidth: 400, 
+    height: "90%",
+    maxWidth: 400,
     backgroundColor: "#FFF",
     borderRadius: 10,
     padding: 15,
