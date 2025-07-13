@@ -11,7 +11,7 @@ import {
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Picker } from "@react-native-picker/picker";
 import { db } from "../../../constants/firebase";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 const districts = [
@@ -107,11 +107,21 @@ export default function EditCamp() {
     }
   };
 
-  // Add this function to handle date selection
+  // Add this function to handle date selection with future date validation
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      setDate(selectedDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate >= today) {
+        setDate(selectedDate);
+      } else {
+        Alert.alert(
+          "Invalid Date",
+          "Please select a future date for the health camp."
+        );
+      }
     }
   };
 
@@ -136,15 +146,16 @@ export default function EditCamp() {
         organizationName,
         healthCampName,
         location,
-        date: date.toISOString(), // Add the date field
-        timeFrom: timeFrom.toISOString(),
-        timeTo: timeTo.toISOString(),
+        date: Timestamp.fromDate(date), // Store as Firestore Timestamp
+        timeFrom: Timestamp.fromDate(timeFrom),
+        timeTo: Timestamp.fromDate(timeTo),
         description,
         ambulancesAvailable,
         hospitalNearby,
-        latitude,
-        longitude,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
         registrationUrl,
+        updatedAt: Timestamp.now(),
       });
 
       Alert.alert("Success", "Health Camp Updated Successfully!");
@@ -195,14 +206,17 @@ export default function EditCamp() {
         )}
       </View>
 
-      {/* Add Date Picker */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Date:</Text>
+      {/* Date Selection - Important Field */}
+      <View style={styles.importantInputContainer}>
+        <Text style={styles.importantLabel}>📅 Camp Date (Required):</Text>
         <TouchableOpacity
-          style={styles.timeButton}
+          style={styles.dateTimeInput}
           onPress={() => setShowDatePicker(true)}
         >
-          <Text style={styles.timeButtonText}>{date.toLocaleDateString()}</Text>
+          <Text style={styles.dateTimeInputText}>
+            {date.toLocaleDateString()}
+          </Text>
+          <Text style={styles.selectText}>Tap to select date</Text>
         </TouchableOpacity>
         {showDatePicker && (
           <DateTimePicker
@@ -210,17 +224,25 @@ export default function EditCamp() {
             mode="date"
             display="default"
             onChange={handleDateChange}
+            minimumDate={new Date()} // Restrict to future dates only
           />
         )}
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Time From:</Text>
+      {/* Time From Selection - Important Field */}
+      <View style={styles.importantInputContainer}>
+        <Text style={styles.importantLabel}>🕐 Start Time (Required):</Text>
         <TouchableOpacity
-          style={styles.timeButton}
+          style={styles.dateTimeInput}
           onPress={() => setShowTimeFromPicker(true)}
         >
-          <Text style={styles.timeButtonText}>{timeFrom.toLocaleTimeString()}</Text>
+          <Text style={styles.dateTimeInputText}>
+            {timeFrom.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+          <Text style={styles.selectText}>Tap to select start time</Text>
         </TouchableOpacity>
         {showTimeFromPicker && (
           <DateTimePicker
@@ -235,13 +257,20 @@ export default function EditCamp() {
         )}
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Time To:</Text>
+      {/* Time To Selection - Important Field */}
+      <View style={styles.importantInputContainer}>
+        <Text style={styles.importantLabel}>🕐 End Time (Required):</Text>
         <TouchableOpacity
-          style={styles.timeButton}
+          style={styles.dateTimeInput}
           onPress={() => setShowTimeToPicker(true)}
         >
-          <Text style={styles.timeButtonText}>{timeTo.toLocaleTimeString()}</Text>
+          <Text style={styles.dateTimeInputText}>
+            {timeTo.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+          <Text style={styles.selectText}>Tap to select end time</Text>
         </TouchableOpacity>
         {showTimeToPicker && (
           <DateTimePicker
@@ -250,7 +279,17 @@ export default function EditCamp() {
             display="default"
             onChange={(event, selectedTime) => {
               setShowTimeToPicker(false);
-              if (selectedTime) setTimeTo(selectedTime);
+              if (selectedTime) {
+                // Validate that end time is after start time
+                if (selectedTime <= timeFrom) {
+                  Alert.alert(
+                    "Invalid Time",
+                    "End time must be after start time."
+                  );
+                } else {
+                  setTimeTo(selectedTime);
+                }
+              }
             }}
           />
         )}
@@ -342,10 +381,32 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 15,
   },
+  importantInputContainer: {
+    marginBottom: 20,
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
   label: {
     fontSize: 16,
     color: "#2E7D32",
     marginBottom: 5,
+  },
+  importantLabel: {
+    fontSize: 18,
+    color: "#1B5E20",
+    marginBottom: 10,
+    fontWeight: "bold",
   },
   input: {
     height: 40,
@@ -361,6 +422,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     backgroundColor: "#FFF",
+  },
+  dateTimeInput: {
+    backgroundColor: "#F8F9FA",
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    borderRadius: 8,
+    padding: 15,
+    minHeight: 60,
+    justifyContent: "center",
+  },
+  dateTimeInputText: {
+    fontSize: 18,
+    color: "#1B5E20",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  selectText: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 5,
+    fontStyle: "italic",
   },
   timeButton: {
     backgroundColor: "#2E7D32",

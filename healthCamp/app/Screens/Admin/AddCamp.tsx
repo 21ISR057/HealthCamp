@@ -11,7 +11,7 @@ import {
 import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { db, auth } from "../../../constants/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 const districts = [
@@ -58,10 +58,30 @@ export default function AddCamp() {
   const [organizationName, setOrganizationName] = useState("");
   const [healthCampName, setHealthCampName] = useState("");
   const [location, setLocation] = useState(districts[0]); // Default to the first district
-  const [date, setDate] = useState(new Date()); // Add this state
-  const [showDatePicker, setShowDatePicker] = useState(false); // Add this state
-  const [timeFrom, setTimeFrom] = useState(new Date());
-  const [timeTo, setTimeTo] = useState(new Date());
+  // Set default date to tomorrow to ensure it's a future date
+  const getDefaultDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  };
+  const [date, setDate] = useState(getDefaultDate());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Initialize time with proper default values
+  const getDefaultTimeFrom = () => {
+    const time = new Date();
+    time.setHours(9, 0, 0, 0); // 9:00 AM
+    return time;
+  };
+
+  const getDefaultTimeTo = () => {
+    const time = new Date();
+    time.setHours(17, 0, 0, 0); // 5:00 PM
+    return time;
+  };
+
+  const [timeFrom, setTimeFrom] = useState(getDefaultTimeFrom());
+  const [timeTo, setTimeTo] = useState(getDefaultTimeTo());
   const [description, setDescription] = useState("");
   const [ambulancesAvailable, setAmbulancesAvailable] = useState("");
   const [hospitalNearby, setHospitalNearby] = useState("");
@@ -73,15 +93,29 @@ export default function AddCamp() {
 
   const router = useRouter();
 
-  // Add this function to handle date selection
+  // Add this function to handle date selection with future date validation
   const handleDateChange = (event: any, selectedDate?: Date) => {
+    console.log("handleDateChange called with:", event, selectedDate);
     setShowDatePicker(false);
     if (selectedDate) {
-      setDate(selectedDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate >= today) {
+        setDate(selectedDate);
+        console.log("Date updated to:", selectedDate);
+      } else {
+        Alert.alert(
+          "Invalid Date",
+          "Please select a future date for the health camp."
+        );
+      }
     }
   };
 
   const handleAddCamp = async () => {
+    console.log("handleAddCamp called");
+
     // Validate all required fields
     if (
       !organizationName ||
@@ -98,35 +132,105 @@ export default function AddCamp() {
       return;
     }
 
+    // Validate latitude and longitude are numbers
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    if (isNaN(lat) || isNaN(lng)) {
+      Alert.alert("Error", "Please enter valid latitude and longitude values!");
+      return;
+    }
+
+    console.log("Validation passed, adding camp...");
+    console.log("Date:", date);
+    console.log("TimeFrom:", timeFrom);
+    console.log("TimeTo:", timeTo);
+
+    // Validate date and time
+    if (!date || !timeFrom || !timeTo) {
+      Alert.alert("Error", "Please select date and time!");
+      return;
+    }
+
+    // Validate that timeFrom is before timeTo
+    if (timeFrom >= timeTo) {
+      Alert.alert("Error", "Start time must be before end time!");
+      return;
+    }
+
+    console.log("Adding camp with data:", {
+      organizationName,
+      healthCampName,
+      location,
+      date: date.toISOString(),
+      timeFrom: timeFrom.toISOString(),
+      timeTo: timeTo.toISOString(),
+      latitude,
+      longitude,
+    });
+
     try {
+      // Check if user is authenticated
+      if (!auth.currentUser?.uid) {
+        Alert.alert("Error", "You must be logged in to add a camp!");
+        return;
+      }
+
       // Generate a unique ID for the camp
       const campId = new Date().getTime().toString();
 
-      // Add the camp data to Firestore
-      await setDoc(doc(db, "healthCamps", campId), {
+      console.log("Saving camp with ID:", campId);
+      console.log("Admin ID:", auth.currentUser.uid);
+
+      // Prepare camp data
+      const campData = {
         organizationName,
         healthCampName,
         location,
-        date: date.toISOString(), // Add the date field
-        timeFrom: timeFrom.toISOString(),
-        timeTo: timeTo.toISOString(),
+        date: Timestamp.fromDate(date),
+        timeFrom: Timestamp.fromDate(timeFrom),
+        timeTo: Timestamp.fromDate(timeTo),
         description,
         ambulancesAvailable,
         hospitalNearby,
-        latitude,
-        longitude,
+        latitude: lat,
+        longitude: lng,
         registrationUrl,
-        adminId: auth.currentUser?.uid,
-      });
+        adminId: auth.currentUser.uid,
+        createdAt: Timestamp.now(),
+      };
+
+      console.log("Camp data to save:", campData);
+
+      // Add the camp data to Firestore
+      await setDoc(doc(db, "healthCamps", campId), campData);
+
+      console.log("Camp saved successfully!");
 
       // Show success message
       Alert.alert("Success", "Health Camp Added Successfully!");
+
+      // Reset form
+      setOrganizationName("");
+      setHealthCampName("");
+      setLocation(districts[0]);
+      setDate(getDefaultDate());
+      setTimeFrom(getDefaultTimeFrom());
+      setTimeTo(getDefaultTimeTo());
+      setDescription("");
+      setAmbulancesAvailable("");
+      setHospitalNearby("");
+      setLatitude("");
+      setLongitude("");
+      setRegistrationUrl("");
 
       // Navigate to the ViewCamp screen
       router.push("/Screens/Admin/ViewCamp");
     } catch (error) {
       console.error("Error adding camp:", error);
-      Alert.alert("Error", "Failed to add health camp. Please try again.");
+      Alert.alert(
+        "Error",
+        `Failed to add health camp: ${error.message || error}`
+      );
     }
   };
 
@@ -171,33 +275,50 @@ export default function AddCamp() {
         )}
       </View>
 
-      {/* Add Date Picker */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Date:</Text>
+      {/* Date Selection - Important Field */}
+      <View style={styles.importantInputContainer}>
+        <Text style={styles.importantLabel}>📅 Camp Date (Required):</Text>
         <TouchableOpacity
-          style={styles.timeButton}
+          style={styles.dateTimeInput}
           onPress={() => setShowDatePicker(true)}
         >
-          <Text style={styles.timeButtonText}>{date.toLocaleDateString()}</Text>
+          <Text style={styles.dateTimeInputText}>
+            {date.toLocaleDateString()}
+          </Text>
+          <Text style={styles.selectText}>Tap to select date</Text>
         </TouchableOpacity>
+
         {showDatePicker && (
           <DateTimePicker
             value={date}
             mode="date"
             display="default"
             onChange={handleDateChange}
+            minimumDate={new Date()}
           />
         )}
+
+        <Text style={styles.helperText}>
+          Select a future date for the health camp
+        </Text>
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Time From:</Text>
+      {/* Time From Selection - Important Field */}
+      <View style={styles.importantInputContainer}>
+        <Text style={styles.importantLabel}>🕐 Start Time (Required):</Text>
         <TouchableOpacity
-          style={styles.timeButton}
+          style={styles.dateTimeInput}
           onPress={() => setShowTimeFromPicker(true)}
         >
-          <Text style={styles.timeButtonText}>{timeFrom.toLocaleTimeString()}</Text>
+          <Text style={styles.dateTimeInputText}>
+            {timeFrom.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+          <Text style={styles.selectText}>Tap to select start time</Text>
         </TouchableOpacity>
+
         {showTimeFromPicker && (
           <DateTimePicker
             value={timeFrom}
@@ -209,16 +330,26 @@ export default function AddCamp() {
             }}
           />
         )}
+
+        <Text style={styles.helperText}>Select the camp start time</Text>
       </View>
 
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Time To:</Text>
+      {/* Time To Selection - Important Field */}
+      <View style={styles.importantInputContainer}>
+        <Text style={styles.importantLabel}>🕐 End Time (Required):</Text>
         <TouchableOpacity
-          style={styles.timeButton}
+          style={styles.dateTimeInput}
           onPress={() => setShowTimeToPicker(true)}
         >
-          <Text style={styles.timeButtonText}>{timeTo.toLocaleTimeString()}</Text>
+          <Text style={styles.dateTimeInputText}>
+            {timeTo.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </Text>
+          <Text style={styles.selectText}>Tap to select end time</Text>
         </TouchableOpacity>
+
         {showTimeToPicker && (
           <DateTimePicker
             value={timeTo}
@@ -226,10 +357,22 @@ export default function AddCamp() {
             display="default"
             onChange={(event, selectedTime) => {
               setShowTimeToPicker(false);
-              if (selectedTime) setTimeTo(selectedTime);
+              if (selectedTime) {
+                // Validate that end time is after start time
+                if (selectedTime <= timeFrom) {
+                  Alert.alert(
+                    "Invalid Time",
+                    "End time must be after start time."
+                  );
+                } else {
+                  setTimeTo(selectedTime);
+                }
+              }
             }}
           />
         )}
+
+        <Text style={styles.helperText}>Select the camp end time</Text>
       </View>
 
       <View style={styles.inputContainer}>
@@ -318,10 +461,32 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: 15,
   },
+  importantInputContainer: {
+    marginBottom: 20,
+    backgroundColor: "#FFF",
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 2,
+    borderColor: "#4CAF50",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
   label: {
     fontSize: 16,
     color: "#2E7D32",
     marginBottom: 5,
+  },
+  importantLabel: {
+    fontSize: 18,
+    color: "#1B5E20",
+    marginBottom: 10,
+    fontWeight: "bold",
   },
   input: {
     height: 40,
@@ -337,6 +502,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     backgroundColor: "#FFF",
+  },
+  dateTimeInput: {
+    backgroundColor: "#F8F9FA",
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+    borderRadius: 8,
+    padding: 15,
+    minHeight: 60,
+    justifyContent: "center",
+  },
+  dateTimeInputText: {
+    fontSize: 18,
+    color: "#1B5E20",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  selectText: {
+    fontSize: 12,
+    color: "#666",
+    textAlign: "center",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 5,
+    fontStyle: "italic",
   },
   timeButton: {
     backgroundColor: "#2E7D32",

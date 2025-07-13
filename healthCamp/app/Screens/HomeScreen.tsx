@@ -1,8 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Linking, Modal, TextInput, Alert, Image, StatusBar } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  Modal,
+  TextInput,
+  Alert,
+  Image,
+  StatusBar,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Feather, Ionicons } from "@expo/vector-icons";
-import { collection, getDocs, Timestamp, addDoc, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  Timestamp,
+  addDoc,
+  query,
+  where,
+} from "firebase/firestore";
 import { db, auth } from "../../constants/firebase";
 import { WebView } from "react-native-webview";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -60,7 +79,10 @@ const HomeScreen = () => {
     try {
       const user = auth.currentUser;
       if (user) {
-        const userQuery = query(collection(db, "users"), where("uid", "==", user.uid));
+        const userQuery = query(
+          collection(db, "users"),
+          where("uid", "==", user.uid)
+        );
         const userSnapshot = await getDocs(userQuery);
         if (!userSnapshot.empty) {
           const userData = userSnapshot.docs[0].data() as User;
@@ -75,51 +97,78 @@ const HomeScreen = () => {
   const fetchCamps = async () => {
     try {
       const querySnapshot = await getDocs(collection(db, "healthCamps"));
-      const campsData: HealthCamp[] = await Promise.all(querySnapshot.docs.map(async (doc) => {
-        const data = doc.data();
-        const date = data.date instanceof Timestamp ? data.date.toDate() : new Date(data.date || new Date());
-        const timeFrom = data.timeFrom instanceof Timestamp ? data.timeFrom.toDate() : new Date(data.timeFrom || new Date());
-        const timeTo = data.timeTo instanceof Timestamp ? data.timeTo.toDate() : new Date(data.timeTo || new Date());
+      const campsData: HealthCamp[] = await Promise.all(
+        querySnapshot.docs.map(async (doc) => {
+          const data = doc.data();
+          const date =
+            data.date instanceof Timestamp
+              ? data.date.toDate()
+              : new Date(data.date || new Date());
+          const timeFrom =
+            data.timeFrom instanceof Timestamp
+              ? data.timeFrom.toDate()
+              : new Date(data.timeFrom || new Date());
+          const timeTo =
+            data.timeTo instanceof Timestamp
+              ? data.timeTo.toDate()
+              : new Date(data.timeTo || new Date());
 
-        const feedbacksQuery1 = query(collection(db, "feedbacks"), where("healthCampName", "==", data.healthCampName));
-        const feedbacksQuery2 = query(collection(db, "feedbacks"), where("campName", "==", data.healthCampName));
-        
-        const [feedbacksSnapshot1, feedbacksSnapshot2] = await Promise.all([
-          getDocs(feedbacksQuery1),
-          getDocs(feedbacksQuery2)
-        ]);
-        
-        const ratings1 = feedbacksSnapshot1.docs.map((doc) => doc.data().rating || 0);
-        const ratings2 = feedbacksSnapshot2.docs.map((doc) => doc.data().rating || 0);
-        const allRatings = [...ratings1, ...ratings2];
-        
-        const averageRating = allRatings.length > 0 ? 
-          (allRatings.reduce((a, b) => a + b, 0) / allRatings.length) : 0;
+          const feedbacksQuery1 = query(
+            collection(db, "feedbacks"),
+            where("healthCampName", "==", data.healthCampName)
+          );
+          const feedbacksQuery2 = query(
+            collection(db, "feedbacks"),
+            where("campName", "==", data.healthCampName)
+          );
 
-        return {
-          id: doc.id,
-          organizationName: data.organizationName,
-          healthCampName: data.healthCampName,
-          location: data.location,
-          date,
-          timeFrom,
-          timeTo,
-          description: data.description,
-          ambulancesAvailable: data.ambulancesAvailable,
-          hospitalNearby: data.hospitalNearby,
-          latitude: data.latitude,
-          longitude: data.longitude,
-          registrationUrl: data.registrationUrl,
-          averageRating,
-        } as HealthCamp;
-      }));
-      
+          const [feedbacksSnapshot1, feedbacksSnapshot2] = await Promise.all([
+            getDocs(feedbacksQuery1),
+            getDocs(feedbacksQuery2),
+          ]);
+
+          const ratings1 = feedbacksSnapshot1.docs.map(
+            (doc) => doc.data().rating || 0
+          );
+          const ratings2 = feedbacksSnapshot2.docs.map(
+            (doc) => doc.data().rating || 0
+          );
+          const allRatings = [...ratings1, ...ratings2];
+
+          const averageRating =
+            allRatings.length > 0
+              ? allRatings.reduce((a, b) => a + b, 0) / allRatings.length
+              : 0;
+
+          return {
+            id: doc.id,
+            organizationName: data.organizationName,
+            healthCampName: data.healthCampName,
+            location: data.location,
+            date,
+            timeFrom,
+            timeTo,
+            description: data.description,
+            ambulancesAvailable: data.ambulancesAvailable,
+            hospitalNearby: data.hospitalNearby,
+            latitude: data.latitude,
+            longitude: data.longitude,
+            registrationUrl: data.registrationUrl,
+            averageRating,
+          } as HealthCamp;
+        })
+      );
+
       setCamps(campsData);
-      setFilteredCamps(campsData);
-      
+      // Initially show only active camps
+      const activeCamps = campsData.filter((camp) => isCampActive(camp.date));
+      setFilteredCamps(activeCamps);
+
       if (userLocality) {
-        const matchingCamps = campsData.filter(camp => 
-          camp.location.toLowerCase() === userLocality.toLowerCase() && isCampActive(camp.date)
+        const matchingCamps = campsData.filter(
+          (camp) =>
+            camp.location.toLowerCase() === userLocality.toLowerCase() &&
+            isCampActive(camp.date)
         );
         setLocalCamps(matchingCamps);
         setHasNotification(matchingCamps.length > 0);
@@ -148,13 +197,20 @@ const HomeScreen = () => {
   };
 
   const filterCamps = () => {
-    let filtered = camps.filter(camp => isCampActive(camp.date));
+    // Filter to show only active camps (future dates)
+    let filtered = camps.filter((camp) => isCampActive(camp.date));
+    console.log("Active camps after date filtering:", filtered.length);
 
     if (searchQuery) {
-      filtered = filtered.filter((camp) =>
-        camp.healthCampName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        camp.organizationName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        camp.location.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (camp) =>
+          camp.healthCampName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          camp.organizationName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          camp.location.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -172,10 +228,14 @@ const HomeScreen = () => {
 
     // Sort the filtered camps
     if (sortBy === "rating") {
-      filtered = [...filtered].sort((a, b) => (b.averageRating || 0) - (a.averageRating || 0));
+      filtered = [...filtered].sort(
+        (a, b) => (b.averageRating || 0) - (a.averageRating || 0)
+      );
     } else {
       // Default sort by date (upcoming first)
-      filtered = [...filtered].sort((a, b) => a.date.getTime() - b.date.getTime());
+      filtered = [...filtered].sort(
+        (a, b) => a.date.getTime() - b.date.getTime()
+      );
     }
 
     setFilteredCamps(filtered);
@@ -195,16 +255,22 @@ const HomeScreen = () => {
   };
 
   const handleWebsiteLink = (link: string) => {
-    Linking.openURL(link).catch((err) => console.error("Failed to open URL:", err));
+    Linking.openURL(link).catch((err) =>
+      console.error("Failed to open URL:", err)
+    );
   };
 
   const formatDate = (date: Date) => {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    };
     return date.toLocaleDateString(undefined, options);
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   const clearFilters = () => {
@@ -212,7 +278,7 @@ const HomeScreen = () => {
     setDateTo(null);
     setSelectedLocations([]);
     setSearchQuery("");
-    setFilteredCamps(camps.filter(camp => isCampActive(camp.date)));
+    setFilteredCamps(camps.filter((camp) => isCampActive(camp.date)));
     setShowFilterModal(false);
   };
 
@@ -221,11 +287,11 @@ const HomeScreen = () => {
       Alert.alert("Error", "Please fill in all fields and provide a rating");
       return;
     }
-    
+
     if (selectedCampId) {
       try {
-        const selectedCamp = camps.find(camp => camp.id === selectedCampId);
-        
+        const selectedCamp = camps.find((camp) => camp.id === selectedCampId);
+
         if (selectedCamp) {
           await addDoc(collection(db, "feedbacks"), {
             email: feedbackEmail,
@@ -236,9 +302,12 @@ const HomeScreen = () => {
             timestamp: Timestamp.now(),
             rating: feedbackRating,
           });
-          
-          Alert.alert("Success", "Your feedback has been submitted successfully");
-          
+
+          Alert.alert(
+            "Success",
+            "Your feedback has been submitted successfully"
+          );
+
           setFeedbackEmail("");
           setFeedbackText("");
           setFeedbackRating(0);
@@ -247,7 +316,10 @@ const HomeScreen = () => {
         }
       } catch (error) {
         console.error("Error sending feedback:", error);
-        Alert.alert("Error", "Failed to submit feedback. Please try again later.");
+        Alert.alert(
+          "Error",
+          "Failed to submit feedback. Please try again later."
+        );
       }
     }
   };
@@ -257,29 +329,35 @@ const HomeScreen = () => {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-    
+
     if (selectedCampId) {
       try {
-        const selectedCamp = camps.find(camp => camp.id === selectedCampId);
-        
+        const selectedCamp = camps.find((camp) => camp.id === selectedCampId);
+
         if (selectedCamp) {
           await addDoc(collection(db, "complaints"), {
             email: complaintEmail,
             complaint: complaintText,
             campId: selectedCampId,
             campName: selectedCamp.healthCampName,
-            timestamp: Timestamp.now()
+            timestamp: Timestamp.now(),
           });
-          
-          Alert.alert("Success", "Your complaint has been submitted successfully");
-          
+
+          Alert.alert(
+            "Success",
+            "Your complaint has been submitted successfully"
+          );
+
           setComplaintEmail("");
           setComplaintText("");
           setShowComplaintModal(false);
         }
       } catch (error) {
         console.error("Error raising complaint:", error);
-        Alert.alert("Error", "Failed to submit complaint. Please try again later.");
+        Alert.alert(
+          "Error",
+          "Failed to submit complaint. Please try again later."
+        );
       }
     }
   };
@@ -318,10 +396,18 @@ const HomeScreen = () => {
         <View style={styles.cardContent}>
           <View style={styles.cardHeader}>
             <View>
-              <Text style={styles.organizationName}>{item.organizationName}</Text>
+              <Text style={styles.organizationName}>
+                {item.organizationName}
+              </Text>
               <Text style={styles.campName}>{item.healthCampName}</Text>
               {item.averageRating !== undefined && (
-                <View style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginTop: 4,
+                  }}
+                >
                   {renderRating(item.averageRating)}
                   <Text style={{ marginLeft: 4, fontSize: 12, color: "#888" }}>
                     ({item.averageRating.toFixed(1)})
@@ -333,7 +419,7 @@ const HomeScreen = () => {
               <Feather name="more-vertical" size={20} color="#555" />
             </TouchableOpacity>
           </View>
-          
+
           {showOptionsMenu === item.id && (
             <View style={styles.optionsMenu}>
               <TouchableOpacity
@@ -346,7 +432,7 @@ const HomeScreen = () => {
                 <Feather name="message-square" size={16} color="#555" />
                 <Text style={styles.optionText}>Send Feedback</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.optionItem}
                 onPress={() => {
@@ -359,44 +445,52 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           <View style={styles.infoRow}>
             <Feather name="map-pin" size={16} color="#555" />
             <Text style={styles.infoText}>{item.location}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Feather name="calendar" size={16} color="#555" />
             <Text style={styles.infoText}>{formatDate(item.date)}</Text>
           </View>
-          
+
           <View style={styles.infoRow}>
             <Feather name="clock" size={16} color="#555" />
-            <Text style={styles.infoText}>{formatTime(item.timeFrom)} - {formatTime(item.timeTo)}</Text>
+            <Text style={styles.infoText}>
+              {formatTime(item.timeFrom)} - {formatTime(item.timeTo)}
+            </Text>
           </View>
 
           {expandedCampId === item.id && (
             <View style={styles.expandedContent}>
               <Text style={styles.sectionTitle}>Description</Text>
               <Text style={styles.description}>{item.description}</Text>
-              
+
               <Text style={styles.sectionTitle}>Details</Text>
               <View style={styles.infoRow}>
                 <Feather name="truck" size={16} color="#555" />
-                <Text style={styles.infoText}>Ambulances: {item.ambulancesAvailable}</Text>
+                <Text style={styles.infoText}>
+                  Ambulances: {item.ambulancesAvailable}
+                </Text>
               </View>
               <View style={styles.infoRow}>
                 <Feather name="home" size={16} color="#555" />
-                <Text style={styles.infoText}>Hospital Nearby: {item.hospitalNearby}</Text>
+                <Text style={styles.infoText}>
+                  Hospital Nearby: {item.hospitalNearby}
+                </Text>
               </View>
-              
+
               <WebView
-                source={{ uri: `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${item.longitude},${item.latitude}&zoom=14&marker=lonlat:${item.longitude},${item.latitude};color:%23ff0000;size:medium&apiKey=0358f75d36084c9089636544e0aeed50` }}
+                source={{
+                  uri: `https://maps.geoapify.com/v1/staticmap?style=osm-bright&width=600&height=400&center=lonlat:${item.longitude},${item.latitude}&zoom=14&marker=lonlat:${item.longitude},${item.latitude};color:%23ff0000;size:medium&apiKey=0358f75d36084c9089636544e0aeed50`,
+                }}
                 style={styles.map}
               />
-              
-              <TouchableOpacity 
-                style={styles.mapButton} 
+
+              <TouchableOpacity
+                style={styles.mapButton}
                 onPress={() => handleOpenMap(item.latitude, item.longitude)}
               >
                 <Feather name="map" size={16} color="#FFF" />
@@ -404,28 +498,30 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           <View style={styles.cardActions}>
-            <TouchableOpacity 
-              style={styles.actionButton} 
-              onPress={() => setExpandedCampId(expandedCampId === item.id ? null : item.id)}
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() =>
+                setExpandedCampId(expandedCampId === item.id ? null : item.id)
+              }
             >
               <Text style={styles.actionButtonText}>
                 {expandedCampId === item.id ? "View Less" : "View More"}
               </Text>
             </TouchableOpacity>
-            
+
             <View style={styles.actionButtons}>
-              <TouchableOpacity 
-                style={styles.websiteButton} 
+              <TouchableOpacity
+                style={styles.websiteButton}
                 onPress={() => handleWebsiteLink(item.registrationUrl)}
               >
                 <Feather name="external-link" size={16} color="#FFF" />
                 <Text style={styles.buttonText}>Website</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.registerButton} 
+
+              <TouchableOpacity
+                style={styles.registerButton}
                 onPress={() => handleRegister(item.id)}
               >
                 <Feather name="user-plus" size={16} color="#FFF" />
@@ -441,19 +537,19 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#F5F5F5" barStyle="dark-content" />
-      
+
       <Navbar />
-      
+
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Health Camps</Text>
-        
+
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowFilterModal(true)}>
             <Feather name="filter" size={22} color="#333" />
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.notificationButton} 
+
+          <TouchableOpacity
+            style={styles.notificationButton}
             onPress={() => setShowNotificationModal(true)}
           >
             <Feather name="bell" size={22} color="#333" />
@@ -461,7 +557,7 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
       </View>
-      
+
       <View style={styles.searchContainer}>
         <Feather name="search" size={20} color="#888" />
         <TextInput
@@ -477,23 +573,43 @@ const HomeScreen = () => {
           </TouchableOpacity>
         ) : null}
       </View>
-      
+
       <View style={styles.sortContainer}>
         <Text style={styles.sortLabel}>Sort by:</Text>
-        <TouchableOpacity 
-          style={[styles.sortOption, sortBy === "date" && styles.activeSortOption]} 
+        <TouchableOpacity
+          style={[
+            styles.sortOption,
+            sortBy === "date" && styles.activeSortOption,
+          ]}
           onPress={() => setSortBy("date")}
         >
-          <Text style={[styles.sortOptionText, sortBy === "date" && styles.activeSortOptionText]}>Date</Text>
+          <Text
+            style={[
+              styles.sortOptionText,
+              sortBy === "date" && styles.activeSortOptionText,
+            ]}
+          >
+            Date
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.sortOption, sortBy === "rating" && styles.activeSortOption]} 
+        <TouchableOpacity
+          style={[
+            styles.sortOption,
+            sortBy === "rating" && styles.activeSortOption,
+          ]}
           onPress={() => setSortBy("rating")}
         >
-          <Text style={[styles.sortOptionText, sortBy === "rating" && styles.activeSortOptionText]}>Rating</Text>
+          <Text
+            style={[
+              styles.sortOptionText,
+              sortBy === "rating" && styles.activeSortOptionText,
+            ]}
+          >
+            Rating
+          </Text>
         </TouchableOpacity>
       </View>
-      
+
       {selectedLocations.length > 0 || (dateFrom && dateTo) ? (
         <View style={styles.filterChipsContainer}>
           {dateFrom && dateTo && (
@@ -501,35 +617,38 @@ const HomeScreen = () => {
               <Text style={styles.filterChipText}>
                 {formatDate(dateFrom)} - {formatDate(dateTo)}
               </Text>
-              <TouchableOpacity onPress={() => {
-                setDateFrom(null);
-                setDateTo(null);
-              }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setDateFrom(null);
+                  setDateTo(null);
+                }}
+              >
                 <Feather name="x" size={14} color="#555" />
               </TouchableOpacity>
             </View>
           )}
-          
+
           {selectedLocations.map((location, index) => (
             <View key={`loc-${index}`} style={styles.filterChip}>
               <Text style={styles.filterChipText}>{location}</Text>
-              <TouchableOpacity onPress={() => 
-                setSelectedLocations(selectedLocations.filter((loc) => loc !== location))
-              }>
+              <TouchableOpacity
+                onPress={() =>
+                  setSelectedLocations(
+                    selectedLocations.filter((loc) => loc !== location)
+                  )
+                }
+              >
                 <Feather name="x" size={14} color="#555" />
               </TouchableOpacity>
             </View>
           ))}
-          
-          <TouchableOpacity 
-            style={styles.clearChip} 
-            onPress={clearFilters}
-          >
+
+          <TouchableOpacity style={styles.clearChip} onPress={clearFilters}>
             <Text style={styles.clearChipText}>Clear All</Text>
           </TouchableOpacity>
         </View>
       ) : null}
-      
+
       {filteredCamps.length > 0 ? (
         <FlatList
           data={filteredCamps}
@@ -545,7 +664,7 @@ const HomeScreen = () => {
           <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
         </View>
       )}
-      
+
       <Modal
         visible={showNotificationModal}
         transparent={true}
@@ -560,17 +679,17 @@ const HomeScreen = () => {
                 <Feather name="x" size={22} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             {localCamps.length > 0 ? (
               <FlatList
                 data={localCamps}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.notificationItem}
                     onPress={() => {
                       setShowNotificationModal(false);
-                      const camp = filteredCamps.find(c => c.id === item.id);
+                      const camp = filteredCamps.find((c) => c.id === item.id);
                       if (camp) {
                         setExpandedCampId(item.id);
                       }
@@ -604,7 +723,7 @@ const HomeScreen = () => {
           </View>
         </View>
       </Modal>
-      
+
       <Modal
         visible={showFilterModal}
         transparent={true}
@@ -619,7 +738,7 @@ const HomeScreen = () => {
                 <Feather name="x" size={22} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <Text style={styles.filterLabel}>Date Range</Text>
             <TouchableOpacity
               style={styles.datePickerButton}
@@ -632,36 +751,42 @@ const HomeScreen = () => {
                   : "Select Date Range"}
               </Text>
             </TouchableOpacity>
-            
+
             <Text style={styles.filterLabel}>Locations</Text>
             <View style={styles.locationOptions}>
-              {Array.from(new Set(camps.map(camp => camp.location))).map((location, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.locationOption,
-                    selectedLocations.includes(location) && styles.selectedLocation
-                  ]}
-                  onPress={() => {
-                    if (selectedLocations.includes(location)) {
-                      setSelectedLocations(selectedLocations.filter(loc => loc !== location));
-                    } else {
-                      setSelectedLocations([...selectedLocations, location]);
-                    }
-                  }}
-                >
-                  <Text
+              {Array.from(new Set(camps.map((camp) => camp.location))).map(
+                (location, index) => (
+                  <TouchableOpacity
+                    key={index}
                     style={[
-                      styles.locationOptionText,
-                      selectedLocations.includes(location) && styles.selectedLocationText
+                      styles.locationOption,
+                      selectedLocations.includes(location) &&
+                        styles.selectedLocation,
                     ]}
+                    onPress={() => {
+                      if (selectedLocations.includes(location)) {
+                        setSelectedLocations(
+                          selectedLocations.filter((loc) => loc !== location)
+                        );
+                      } else {
+                        setSelectedLocations([...selectedLocations, location]);
+                      }
+                    }}
                   >
-                    {location}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.locationOptionText,
+                        selectedLocations.includes(location) &&
+                          styles.selectedLocationText,
+                      ]}
+                    >
+                      {location}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              )}
             </View>
-            
+
             <View style={styles.filterActions}>
               <TouchableOpacity
                 style={styles.clearFiltersButton}
@@ -669,7 +794,7 @@ const HomeScreen = () => {
               >
                 <Text style={styles.clearFiltersText}>Clear Filters</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={styles.applyFiltersButton}
                 onPress={() => setShowFilterModal(false)}
@@ -680,7 +805,7 @@ const HomeScreen = () => {
           </View>
         </View>
       </Modal>
-      
+
       {showDatePicker && (
         <DateTimePicker
           value={dateFrom || new Date()}
@@ -699,7 +824,7 @@ const HomeScreen = () => {
           }}
         />
       )}
-      
+
       <Modal
         visible={showFeedbackModal}
         transparent={true}
@@ -714,7 +839,7 @@ const HomeScreen = () => {
                 <Feather name="x" size={22} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalContent}>
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
@@ -725,7 +850,7 @@ const HomeScreen = () => {
                 onChangeText={setFeedbackEmail}
                 keyboardType="email-address"
               />
-              
+
               <Text style={styles.inputLabel}>Feedback</Text>
               <TextInput
                 style={styles.textArea}
@@ -737,7 +862,7 @@ const HomeScreen = () => {
                 numberOfLines={5}
                 textAlignVertical="top"
               />
-              
+
               <Text style={styles.inputLabel}>Rating</Text>
               <View style={{ flexDirection: "row", marginBottom: 16 }}>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -753,7 +878,7 @@ const HomeScreen = () => {
                   </TouchableOpacity>
                 ))}
               </View>
-              
+
               <TouchableOpacity
                 style={styles.submitButton}
                 onPress={handleSendFeedback}
@@ -764,7 +889,7 @@ const HomeScreen = () => {
           </View>
         </View>
       </Modal>
-      
+
       <Modal
         visible={showComplaintModal}
         transparent={true}
@@ -779,7 +904,7 @@ const HomeScreen = () => {
                 <Feather name="x" size={22} color="#333" />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.modalContent}>
               <Text style={styles.inputLabel}>Email</Text>
               <TextInput
@@ -790,7 +915,7 @@ const HomeScreen = () => {
                 onChangeText={setComplaintEmail}
                 keyboardType="email-address"
               />
-              
+
               <Text style={styles.inputLabel}>Complaint</Text>
               <TextInput
                 style={styles.textArea}
@@ -802,7 +927,7 @@ const HomeScreen = () => {
                 numberOfLines={5}
                 textAlignVertical="top"
               />
-              
+
               <TouchableOpacity
                 style={[styles.submitButton, { backgroundColor: "#E53935" }]}
                 onPress={handleRaiseComplaint}
@@ -1295,7 +1420,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: "#555",
-  }
+  },
 });
 
 export default HomeScreen;

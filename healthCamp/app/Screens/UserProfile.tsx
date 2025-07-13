@@ -92,10 +92,10 @@ const ProfileSection = ({
             style={styles.input}
             value={String(updatedData[key as keyof UserData] || "")} // Convert to string
             onChangeText={(text) =>
-              setUpdatedData((prev: UserData | null) => ({
-                ...(prev || {}),
+              setUpdatedData({
+                ...(updatedData || {}),
                 [key]: text,
-              }))
+              })
             }
           />
         ) : (
