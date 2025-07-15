@@ -6,11 +6,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ScrollView,
 } from "react-native";
 import { db, auth } from "../../../constants/firebase";
-import { collection, getDocs, query, where, updateDoc, doc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  updateDoc,
+  doc,
+} from "firebase/firestore";
 import * as FileSystem from "expo-file-system";
-import * as Sharing from 'expo-sharing';
+import * as Sharing from "expo-sharing";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 
@@ -51,7 +59,10 @@ const ViewRegistrationsScreen = () => {
     if (!adminId) return;
 
     // Fetch health camps created by the admin
-    const healthCampsQuery = query(collection(db, "healthCamps"), where("adminId", "==", adminId));
+    const healthCampsQuery = query(
+      collection(db, "healthCamps"),
+      where("adminId", "==", adminId)
+    );
     const healthCampsSnapshot = await getDocs(healthCampsQuery);
     const healthCampIds = healthCampsSnapshot.docs.map((doc) => doc.id);
 
@@ -63,26 +74,35 @@ const ViewRegistrationsScreen = () => {
     setCamps(campsData);
 
     // Fetch registrations for these health camps
-    const registrationsQuery = query(collection(db, "registrations"), where("campId", "in", healthCampIds));
+    const registrationsQuery = query(
+      collection(db, "registrations"),
+      where("campId", "in", healthCampIds)
+    );
     const registrationsSnapshot = await getDocs(registrationsQuery);
-    const registrationsData: Registration[] = registrationsSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        campId: data.campId,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        createdAt: data.createdAt.toDate(),
-        verified: data.verified || false,
-      } as Registration;
-    });
+    const registrationsData: Registration[] = registrationsSnapshot.docs.map(
+      (doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          campId: data.campId,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          createdAt: data.createdAt.toDate(),
+          verified: data.verified || false,
+        } as Registration;
+      }
+    );
     setRegistrations(registrationsData);
 
     // Calculate camp reports
     const reports: CampReport[] = campsData.map((camp) => {
-      const campRegistrations = registrationsData.filter((reg) => reg.campId === camp.id);
-      const verifiedRegistrations = campRegistrations.filter((reg) => reg.verified).length;
+      const campRegistrations = registrationsData.filter(
+        (reg) => reg.campId === camp.id
+      );
+      const verifiedRegistrations = campRegistrations.filter(
+        (reg) => reg.verified
+      ).length;
       return {
         campName: camp.healthCampName,
         totalRegistrations: campRegistrations.length,
@@ -107,7 +127,10 @@ const ViewRegistrationsScreen = () => {
 
       // Recalculate camp reports
       const updatedReports = campReports.map((report) => {
-        if (camps.find((camp) => camp.id === campId)?.healthCampName === report.campName) {
+        if (
+          camps.find((camp) => camp.id === campId)?.healthCampName ===
+          report.campName
+        ) {
           return {
             ...report,
             verifiedRegistrations: report.verifiedRegistrations + 1,
@@ -150,9 +173,9 @@ const ViewRegistrationsScreen = () => {
 
       // Share the file
       await Sharing.shareAsync(fileUri, {
-        mimeType: 'text/csv',
-        dialogTitle: 'Share Camp Report',
-        UTI: 'public.comma-separated-values-text',
+        mimeType: "text/csv",
+        dialogTitle: "Share Camp Report",
+        UTI: "public.comma-separated-values-text",
       });
 
       Alert.alert("Success", "CSV file downloaded successfully!");
@@ -176,133 +199,169 @@ const ViewRegistrationsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Registrations</Text>
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Text style={styles.title}>Registrations</Text>
 
-      {/* Camp Filter Buttons */}
-      <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[
-            styles.filterButton,
-            selectedCamp === null && styles.activeFilterButton,
-          ]}
-          onPress={() => setSelectedCamp(null)}
+        {/* Camp Filter Buttons */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScrollContainer}
+          contentContainerStyle={styles.filterContainer}
         >
-          <Text style={[
-            styles.filterButtonText,
-            selectedCamp === null && styles.activeFilterText,
-          ]}>All Camps</Text>
-        </TouchableOpacity>
-        
-        {campReports.map((report) => (
           <TouchableOpacity
-            key={report.campName}
             style={[
               styles.filterButton,
-              selectedCamp === report.campName && styles.activeFilterButton,
+              selectedCamp === null && styles.activeFilterButton,
             ]}
-            onPress={() => setSelectedCamp(report.campName)}
+            onPress={() => setSelectedCamp(null)}
           >
-            <Text style={[
-              styles.filterButtonText,
-              selectedCamp === report.campName && styles.activeFilterText,
-            ]}>{report.campName}</Text>
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedCamp === null && styles.activeFilterText,
+              ]}
+            >
+              All Camps
+            </Text>
           </TouchableOpacity>
-        ))}
-      </View>
 
-      {/* Empty state */}
-      {filteredRegistrations.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Feather name="users" size={60} color="#CCC" />
-          <Text style={styles.emptyText}>No registrations available</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredRegistrations}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View style={styles.listItem}>
-              <View style={styles.headerRow}>
-                <Text style={styles.nameText}>{item.name}</Text>
-                <View style={[
-                  styles.statusBadge,
-                  item.verified ? styles.verifiedBadge : styles.unverifiedBadge
-                ]}>
-                  <Text style={styles.statusText}>
-                    {item.verified ? "Verified" : "Unverified"}
+          {campReports.map((report) => (
+            <TouchableOpacity
+              key={report.campName}
+              style={[
+                styles.filterButton,
+                selectedCamp === report.campName && styles.activeFilterButton,
+              ]}
+              onPress={() => setSelectedCamp(report.campName)}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedCamp === report.campName && styles.activeFilterText,
+                ]}
+              >
+                {report.campName}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Registrations List */}
+        {filteredRegistrations.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Feather name="users" size={60} color="#CCC" />
+            <Text style={styles.emptyText}>No registrations available</Text>
+          </View>
+        ) : (
+          <View style={styles.listContainer}>
+            {filteredRegistrations.map((item) => (
+              <View key={item.id} style={styles.listItem}>
+                <View style={styles.headerRow}>
+                  <Text style={styles.nameText}>{item.name}</Text>
+                  <View
+                    style={[
+                      styles.statusBadge,
+                      item.verified
+                        ? styles.verifiedBadge
+                        : styles.unverifiedBadge,
+                    ]}
+                  >
+                    <Text style={styles.statusText}>
+                      {item.verified ? "Verified" : "Unverified"}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.infoContainer}>
+                  <View style={styles.infoRow}>
+                    <Feather name="mail" size={16} color="#555" />
+                    <Text style={styles.infoText}>{item.email}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Feather name="phone" size={16} color="#555" />
+                    <Text style={styles.infoText}>{item.phone}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Feather name="calendar" size={16} color="#555" />
+                    <Text style={styles.infoText}>
+                      {item.createdAt.toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Feather name="tag" size={16} color="#555" />
+                    <Text style={styles.infoText}>
+                      {getCampName(item.campId)}
+                    </Text>
+                  </View>
+                </View>
+
+                {!item.verified && (
+                  <TouchableOpacity
+                    style={styles.verifyButton}
+                    onPress={() => handleVerify(item.id, item.campId)}
+                  >
+                    <Feather name="check-circle" size={16} color="#FFF" />
+                    <Text style={styles.verifyButtonText}>
+                      Verify Registration
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Camp Reports */}
+        <View style={styles.reportContainer}>
+          <Text style={styles.reportTitle}>Camp Reports</Text>
+          {campReports.map((report, index) => (
+            <View key={index} style={styles.reportItem}>
+              <Text style={styles.reportCampName}>{report.campName}</Text>
+              <View style={styles.reportStats}>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Total</Text>
+                  <Text style={styles.statValue}>
+                    {report.totalRegistrations}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Verified</Text>
+                  <Text style={styles.statValue}>
+                    {report.verifiedRegistrations}
+                  </Text>
+                </View>
+                <View style={styles.statItem}>
+                  <Text style={styles.statLabel}>Pending</Text>
+                  <Text style={styles.statValue}>
+                    {report.totalRegistrations - report.verifiedRegistrations}
                   </Text>
                 </View>
               </View>
-              
-              <View style={styles.infoContainer}>
-                <View style={styles.infoRow}>
-                  <Feather name="mail" size={16} color="#555" />
-                  <Text style={styles.infoText}>{item.email}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Feather name="phone" size={16} color="#555" />
-                  <Text style={styles.infoText}>{item.phone}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Feather name="calendar" size={16} color="#555" />
-                  <Text style={styles.infoText}>{item.createdAt.toLocaleDateString()}</Text>
-                </View>
-                <View style={styles.infoRow}>
-                  <Feather name="tag" size={16} color="#555" />
-                  <Text style={styles.infoText}>{getCampName(item.campId)}</Text>
-                </View>
-              </View>
-              
-              {!item.verified && (
-                <TouchableOpacity
-                  style={styles.verifyButton}
-                  onPress={() => handleVerify(item.id, item.campId)}
-                >
-                  <Feather name="check-circle" size={16} color="#FFF" />
-                  <Text style={styles.verifyButtonText}>Verify Registration</Text>
-                </TouchableOpacity>
-              )}
             </View>
-          )}
-        />
-      )}
+          ))}
+        </View>
 
-      {/* Camp Reports */}
-      <View style={styles.reportContainer}>
-        <Text style={styles.reportTitle}>Camp Reports</Text>
-        {campReports.map((report, index) => (
-          <View key={index} style={styles.reportItem}>
-            <Text style={styles.reportCampName}>{report.campName}</Text>
-            <View style={styles.reportStats}>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Total</Text>
-                <Text style={styles.statValue}>{report.totalRegistrations}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Verified</Text>
-                <Text style={styles.statValue}>{report.verifiedRegistrations}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Pending</Text>
-                <Text style={styles.statValue}>{report.totalRegistrations - report.verifiedRegistrations}</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </View>
+        {/* Action Buttons */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.downloadButton} onPress={downloadCSV}>
+            <Feather name="download" size={16} color="#FFF" />
+            <Text style={styles.buttonText}>Download CSV</Text>
+          </TouchableOpacity>
 
-      {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.downloadButton} onPress={downloadCSV}>
-          <Feather name="download" size={16} color="#FFF" />
-          <Text style={styles.buttonText}>Download CSV</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Feather name="arrow-left" size={16} color="#FFF" />
-          <Text style={styles.buttonText}>Back</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Feather name="arrow-left" size={16} color="#FFF" />
+            <Text style={styles.buttonText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -310,8 +369,14 @@ const ViewRegistrationsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#F5F5F5",
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 24,
@@ -319,18 +384,24 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 20,
   },
-  filterContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  filterScrollContainer: {
     marginBottom: 15,
   },
+  filterContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 5,
+  },
+  listContainer: {
+    marginBottom: 20,
+  },
   filterButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
     backgroundColor: "#EFEFEF",
-    marginRight: 8,
-    marginBottom: 8,
+    marginRight: 10,
+    minWidth: 80,
+    alignItems: "center",
   },
   activeFilterButton: {
     backgroundColor: "#2E7D32",

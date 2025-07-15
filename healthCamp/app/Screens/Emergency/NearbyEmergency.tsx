@@ -10,8 +10,8 @@ import {
   StyleSheet,
   Linking,
   TouchableOpacity,
+  Platform,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import axios from "axios";
 
@@ -192,35 +192,57 @@ const App: React.FC = () => {
 
       {/* Map View */}
       {showMap && location ? (
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: location.latitude,
-            longitude: location.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          }}
-        >
-          <Marker
-            coordinate={{
-              latitude: location.latitude,
-              longitude: location.longitude,
+        <View style={styles.mapPlaceholder}>
+          <Text style={styles.mapTitle}>📍 Map View</Text>
+          <Text style={styles.mapSubtitle}>
+            Your Location: {location.latitude.toFixed(4)},{" "}
+            {location.longitude.toFixed(4)}
+          </Text>
+
+          <View style={styles.servicesContainer}>
+            <Text style={styles.servicesTitle}>
+              Nearby{" "}
+              {serviceType === "hospital" ? "Hospitals" : "Medical Shops"} (
+              {services.length})
+            </Text>
+            {services.slice(0, 3).map((place, index) => (
+              <View key={index} style={styles.serviceItem}>
+                <Text style={styles.serviceName}>📍 {place.name}</Text>
+                <Text style={styles.serviceAddress}>{place.address}</Text>
+                <Text style={styles.serviceDistance}>
+                  Distance: {place.distance}
+                </Text>
+                <TouchableOpacity
+                  style={styles.mapItemNavigateButton}
+                  onPress={() => {
+                    if (location) {
+                      // Open Google Maps with directions from current location to the place
+                      const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${place.latitude},${place.longitude}&travelmode=driving`;
+                      Linking.openURL(url);
+                    }
+                  }}
+                >
+                  <Text style={styles.mapItemNavigateText}>🧭 Navigate</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            {services.length > 3 && (
+              <Text style={styles.moreServices}>
+                ... and {services.length - 3} more locations
+              </Text>
+            )}
+          </View>
+
+          <TouchableOpacity
+            style={styles.openMapButton}
+            onPress={() => {
+              const url = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
+              Linking.openURL(url);
             }}
-            title="Your Location"
-            pinColor="blue"
-          />
-          {services.map((place, index) => (
-            <Marker
-              key={index}
-              coordinate={{
-                latitude: place.latitude,
-                longitude: place.longitude,
-              }}
-              title={place.name}
-              description={`${place.address} - ${place.distance}`}
-            />
-          ))}
-        </MapView>
+          >
+            <Text style={styles.openMapButtonText}>Open in Google Maps</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         // List View
         <FlatList
@@ -231,6 +253,20 @@ const App: React.FC = () => {
               <Text style={styles.listItemTitle}>{item.name}</Text>
               <Text>{item.address}</Text>
               {item.distance && <Text>Distance: {item.distance}</Text>}
+
+              {/* Navigation Button */}
+              <TouchableOpacity
+                style={styles.navigateButton}
+                onPress={() => {
+                  if (location) {
+                    // Open Google Maps with directions from current location to the place
+                    const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${item.latitude},${item.longitude}&travelmode=driving`;
+                    Linking.openURL(url);
+                  }
+                }}
+              >
+                <Text style={styles.navigateButtonText}>🧭 Navigate</Text>
+              </TouchableOpacity>
             </View>
           )}
         />
@@ -283,8 +319,114 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   map: { width: width, height: height * 0.6 },
+  mapPlaceholder: {
+    backgroundColor: "#f8f9fa",
+    borderRadius: 12,
+    padding: 20,
+    margin: 10,
+    borderWidth: 2,
+    borderColor: "#e9ecef",
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  mapTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#495057",
+    marginBottom: 8,
+  },
+  mapSubtitle: {
+    fontSize: 14,
+    color: "#6c757d",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  servicesContainer: {
+    width: "100%",
+    marginBottom: 15,
+  },
+  servicesTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#343a40",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  serviceItem: {
+    backgroundColor: "#ffffff",
+    padding: 12,
+    marginVertical: 4,
+    borderRadius: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: "#007bff",
+  },
+  serviceName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#212529",
+  },
+  serviceAddress: {
+    fontSize: 12,
+    color: "#6c757d",
+    marginTop: 2,
+  },
+  serviceDistance: {
+    fontSize: 12,
+    color: "#28a745",
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  moreServices: {
+    fontSize: 12,
+    color: "#6c757d",
+    fontStyle: "italic",
+    textAlign: "center",
+    marginTop: 8,
+  },
+  openMapButton: {
+    backgroundColor: "#007bff",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  openMapButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
   listItem: { padding: 10, borderBottomWidth: 1, backgroundColor: "white" },
   listItemTitle: { fontWeight: "bold", color: "#333" },
+  navigateButton: {
+    backgroundColor: "#007bff",
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+    marginTop: 8,
+    alignItems: "center",
+  },
+  navigateButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  mapItemNavigateButton: {
+    backgroundColor: "#28a745",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 5,
+    marginTop: 6,
+    alignItems: "center",
+  },
+  mapItemNavigateText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
   emergencyContainer: {
     marginTop: 20,
     padding: 15,

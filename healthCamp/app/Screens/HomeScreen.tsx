@@ -159,16 +159,22 @@ const HomeScreen = () => {
         })
       );
 
-      setCamps(campsData);
-      // Initially show only active camps
-      const activeCamps = campsData.filter((camp) => isCampActive(camp.date));
+      // Filter out expired camps - only show current and upcoming camps
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Set to start of today for comparison
+
+      const activeCamps = campsData.filter((camp) => {
+        const campDate = new Date(camp.date);
+        campDate.setHours(0, 0, 0, 0); // Set to start of camp date for comparison
+        return campDate >= today; // Only include camps that are today or in the future
+      });
+
+      setCamps(activeCamps);
       setFilteredCamps(activeCamps);
 
       if (userLocality) {
-        const matchingCamps = campsData.filter(
-          (camp) =>
-            camp.location.toLowerCase() === userLocality.toLowerCase() &&
-            isCampActive(camp.date)
+        const matchingCamps = activeCamps.filter(
+          (camp) => camp.location.toLowerCase() === userLocality.toLowerCase()
         );
         setLocalCamps(matchingCamps);
         setHasNotification(matchingCamps.length > 0);
@@ -190,16 +196,8 @@ const HomeScreen = () => {
     filterCamps();
   }, [searchQuery, dateFrom, dateTo, selectedLocations, camps, sortBy]);
 
-  const isCampActive = (campDate: Date) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return campDate >= today;
-  };
-
   const filterCamps = () => {
-    // Filter to show only active camps (future dates)
-    let filtered = camps.filter((camp) => isCampActive(camp.date));
-    console.log("Active camps after date filtering:", filtered.length);
+    let filtered = camps;
 
     if (searchQuery) {
       filtered = filtered.filter(
@@ -278,7 +276,7 @@ const HomeScreen = () => {
     setDateTo(null);
     setSelectedLocations([]);
     setSearchQuery("");
-    setFilteredCamps(camps.filter((camp) => isCampActive(camp.date)));
+    setFilteredCamps(camps);
     setShowFilterModal(false);
   };
 
