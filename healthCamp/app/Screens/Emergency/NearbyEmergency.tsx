@@ -11,9 +11,15 @@ import {
   Linking,
   TouchableOpacity,
   Platform,
+  StatusBar,
+  ScrollView,
 } from "react-native";
 import * as Location from "expo-location";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width, height } = Dimensions.get("window");
 
@@ -110,6 +116,7 @@ const sendSOSAlert = async (latitude: number, longitude: number) => {
 
 // Main App Component
 const App: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const [
     location,
     setLocation,
@@ -120,6 +127,17 @@ const App: React.FC = () => {
   const [serviceType, setServiceType] = useState<"hospital" | "medical">(
     "hospital"
   );
+
+  // Load language preference on component mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const storedLang = await AsyncStorage.getItem("language");
+      if (storedLang) {
+        i18n.changeLanguage(storedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -171,133 +189,260 @@ const App: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Navbar */}
-      <View style={styles.navbar}>
-        <Text style={styles.navbarText}>Nearby Services Finder</Text>
+      <StatusBar backgroundColor="#26A69A" barStyle="light-content" />
+
+      {/* Header with Gradient */}
+      <LinearGradient colors={["#26A69A", "#00695C"]} style={styles.header}>
+        <View style={styles.headerContent}>
+          <MaterialIcons name="local-hospital" size={24} color="#FFFFFF" />
+          <Text style={styles.title}>{t("emergency_service")}</Text>
+          <Text style={styles.subtitle}>
+            Find nearby hospitals & medical shops
+          </Text>
+        </View>
+      </LinearGradient>
+
+      {/* Emergency Action Buttons - Compact */}
+      <View style={styles.emergencyButtons}>
+        <TouchableOpacity
+          style={styles.compactEmergencyButton}
+          onPress={() => callNumber("108")}
+        >
+          <MaterialIcons name="warning" size={20} color="#FFFFFF" />
+          <Text style={styles.compactButtonText}>SOS 108</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.compactAmbulanceButton}
+          onPress={() => callNumber("102")}
+        >
+          <MaterialIcons name="local-hospital" size={20} color="#FFFFFF" />
+          <Text style={styles.compactButtonText}>Ambulance 102</Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Toggle Buttons */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title={showMap ? "Show List" : "Visualize"}
-          onPress={() => setShowMap(!showMap)}
-        />
-        <Button
-          title={
-            serviceType === "hospital" ? "Show Medical Shops" : "Show Hospitals"
-          }
-          onPress={toggleServiceType}
-        />
+      {/* Service Type Toggle */}
+      <View style={styles.serviceToggle}>
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            serviceType === "hospital" && styles.activeToggle,
+          ]}
+          onPress={() => serviceType !== "hospital" && toggleServiceType()}
+        >
+          <MaterialIcons
+            name="local-hospital"
+            size={20}
+            color={serviceType === "hospital" ? "#FFFFFF" : "#26A69A"}
+          />
+          <Text
+            style={[
+              styles.toggleText,
+              serviceType === "hospital" && styles.activeToggleText,
+            ]}
+          >
+            Hospitals
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.toggleButton,
+            serviceType === "medical" && styles.activeToggle,
+          ]}
+          onPress={() => serviceType !== "medical" && toggleServiceType()}
+        >
+          <MaterialIcons
+            name="local-pharmacy"
+            size={20}
+            color={serviceType === "medical" ? "#FFFFFF" : "#26A69A"}
+          />
+          <Text
+            style={[
+              styles.toggleText,
+              serviceType === "medical" && styles.activeToggleText,
+            ]}
+          >
+            Pharmacies
+          </Text>
+        </TouchableOpacity>
       </View>
+
+      {/* View Toggle */}
+      <View style={styles.viewToggle}>
+        <TouchableOpacity
+          style={[styles.viewToggleButton, !showMap && styles.activeViewToggle]}
+          onPress={() => setShowMap(false)}
+        >
+          <MaterialIcons
+            name="list"
+            size={20}
+            color={!showMap ? "#FFFFFF" : "#26A69A"}
+          />
+          <Text
+            style={[
+              styles.viewToggleText,
+              !showMap && styles.activeViewToggleText,
+            ]}
+          >
+            List View
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.viewToggleButton, showMap && styles.activeViewToggle]}
+          onPress={() => setShowMap(true)}
+        >
+          <MaterialIcons
+            name="map"
+            size={20}
+            color={showMap ? "#FFFFFF" : "#26A69A"}
+          />
+          <Text
+            style={[
+              styles.viewToggleText,
+              showMap && styles.activeViewToggleText,
+            ]}
+          >
+            Map View
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Loading State */}
+      {loading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#26A69A" />
+          <Text style={styles.loadingText}>Finding nearby services...</Text>
+        </View>
+      )}
 
       {/* Map View */}
-      {showMap && location ? (
-        <View style={styles.mapPlaceholder}>
-          <Text style={styles.mapTitle}>📍 Map View</Text>
-          <Text style={styles.mapSubtitle}>
-            Your Location: {location.latitude.toFixed(4)},{" "}
-            {location.longitude.toFixed(4)}
-          </Text>
-
-          <View style={styles.servicesContainer}>
-            <Text style={styles.servicesTitle}>
-              Nearby{" "}
-              {serviceType === "hospital" ? "Hospitals" : "Medical Shops"} (
-              {services.length})
+      {showMap && location && !loading ? (
+        <ScrollView
+          style={styles.mapScrollView}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.mapPlaceholder}>
+            <Text style={styles.mapTitle}>📍 Map View</Text>
+            <Text style={styles.mapSubtitle}>
+              Your Location: {location.latitude.toFixed(4)},{" "}
+              {location.longitude.toFixed(4)}
             </Text>
-            {services.slice(0, 3).map((place, index) => (
-              <View key={index} style={styles.serviceItem}>
-                <Text style={styles.serviceName}>📍 {place.name}</Text>
-                <Text style={styles.serviceAddress}>{place.address}</Text>
-                <Text style={styles.serviceDistance}>
-                  Distance: {place.distance}
+
+            <View style={styles.servicesContainer}>
+              <Text style={styles.servicesTitle}>
+                Nearby{" "}
+                {serviceType === "hospital" ? "Hospitals" : "Medical Shops"} (
+                {services.length})
+              </Text>
+              {services.slice(0, 3).map((place, index) => (
+                <View key={index} style={styles.serviceItem}>
+                  <Text style={styles.serviceName}>📍 {place.name}</Text>
+                  <Text style={styles.serviceAddress}>{place.address}</Text>
+                  <Text style={styles.serviceDistance}>
+                    Distance: {place.distance}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.mapItemNavigateButton}
+                    onPress={() => {
+                      if (location) {
+                        // Open Google Maps with directions from current location to the place
+                        const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${place.latitude},${place.longitude}&travelmode=driving`;
+                        Linking.openURL(url);
+                      }
+                    }}
+                  >
+                    <Text style={styles.mapItemNavigateText}>🧭 Navigate</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {services.length > 3 && (
+                <Text style={styles.moreServices}>
+                  ... and {services.length - 3} more locations
                 </Text>
+              )}
+            </View>
+
+            <TouchableOpacity
+              style={styles.openMapButton}
+              onPress={() => {
+                const url = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
+                Linking.openURL(url);
+              }}
+            >
+              <Text style={styles.openMapButtonText}>Open in Google Maps</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      ) : null}
+
+      {/* Services List */}
+      {!showMap && !loading && services.length > 0 && (
+        <View style={styles.servicesSection}>
+          <Text style={styles.sectionTitle}>
+            Nearby {serviceType === "hospital" ? "Hospitals" : "Pharmacies"}
+          </Text>
+          <FlatList
+            data={services}
+            keyExtractor={(item, index) => index.toString()}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <View style={styles.serviceCard}>
+                <View style={styles.serviceHeader}>
+                  <MaterialIcons
+                    name={
+                      serviceType === "hospital"
+                        ? "local-hospital"
+                        : "local-pharmacy"
+                    }
+                    size={24}
+                    color="#26A69A"
+                  />
+                  <View style={styles.serviceInfo}>
+                    <Text style={styles.serviceName}>{item.name}</Text>
+                    <Text style={styles.serviceAddress}>{item.address}</Text>
+                    {item.distance && (
+                      <View style={styles.distanceContainer}>
+                        <MaterialIcons
+                          name="location-on"
+                          size={16}
+                          color="#757575"
+                        />
+                        <Text style={styles.distanceText}>{item.distance}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
                 <TouchableOpacity
-                  style={styles.mapItemNavigateButton}
+                  style={styles.navigateButton}
                   onPress={() => {
                     if (location) {
-                      // Open Google Maps with directions from current location to the place
-                      const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${place.latitude},${place.longitude}&travelmode=driving`;
+                      const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${item.latitude},${item.longitude}&travelmode=driving`;
                       Linking.openURL(url);
                     }
                   }}
                 >
-                  <Text style={styles.mapItemNavigateText}>🧭 Navigate</Text>
+                  <MaterialIcons name="directions" size={20} color="#FFFFFF" />
+                  <Text style={styles.navigateButtonText}>Navigate</Text>
                 </TouchableOpacity>
               </View>
-            ))}
-            {services.length > 3 && (
-              <Text style={styles.moreServices}>
-                ... and {services.length - 3} more locations
-              </Text>
             )}
-          </View>
-
-          <TouchableOpacity
-            style={styles.openMapButton}
-            onPress={() => {
-              const url = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
-              Linking.openURL(url);
-            }}
-          >
-            <Text style={styles.openMapButtonText}>Open in Google Maps</Text>
-          </TouchableOpacity>
+          />
         </View>
-      ) : (
-        // List View
-        <FlatList
-          data={services}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <View style={styles.listItem}>
-              <Text style={styles.listItemTitle}>{item.name}</Text>
-              <Text>{item.address}</Text>
-              {item.distance && <Text>Distance: {item.distance}</Text>}
-
-              {/* Navigation Button */}
-              <TouchableOpacity
-                style={styles.navigateButton}
-                onPress={() => {
-                  if (location) {
-                    // Open Google Maps with directions from current location to the place
-                    const url = `https://www.google.com/maps/dir/?api=1&origin=${location.latitude},${location.longitude}&destination=${item.latitude},${item.longitude}&travelmode=driving`;
-                    Linking.openURL(url);
-                  }
-                }}
-              >
-                <Text style={styles.navigateButtonText}>🧭 Navigate</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        />
       )}
 
-      {/* Emergency Contacts */}
-      <View style={styles.emergencyContainer}>
-        <Text style={styles.emergencyTitle}>🚑 Emergency Contacts</Text>
-        <TouchableOpacity
-          style={styles.callButton}
-          onPress={() => callNumber("108")}
-        >
-          <Text style={styles.callText}>🚨 108 - Ambulance Service</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.callButton}
-          onPress={() => callNumber("112")}
-        >
-          <Text style={styles.callText}>
-            🆘 112 - National Emergency Number
+      {/* No Services Found */}
+      {!loading && !showMap && services.length === 0 && (
+        <View style={styles.noServicesContainer}>
+          <MaterialIcons name="search-off" size={64} color="#BDBDBD" />
+          <Text style={styles.noServicesText}>No services found nearby</Text>
+          <Text style={styles.noServicesSubtext}>
+            Try changing your location or service type
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.sosButton}
-          onPress={() =>
-            location && sendSOSAlert(location.latitude, location.longitude)
-          }
-        >
-          <Text style={styles.callText}>📢 SOS Emergency Alert</Text>
-        </TouchableOpacity>
-      </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -305,39 +450,283 @@ const App: React.FC = () => {
 export default App;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10, backgroundColor: "#f5f5f5" },
+  container: {
+    flex: 1,
+    backgroundColor: "#F5F5F5",
+  },
   centeredContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#F5F5F5",
   },
-  navbar: { backgroundColor: "#007bff", padding: 15, alignItems: "center" },
-  navbarText: { fontSize: 20, color: "white", fontWeight: "bold" },
-  buttonContainer: {
+  header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#E0F2F1",
+    marginTop: 6,
+    textAlign: "center",
+  },
+  emergencyButtons: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  compactEmergencyButton: {
+    flex: 1,
+    backgroundColor: "#FF5722",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    elevation: 4,
+    shadowColor: "#FF5722",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  compactAmbulanceButton: {
+    flex: 1,
+    backgroundColor: "#FF9800",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    elevation: 4,
+    shadowColor: "#FF9800",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  compactButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    marginLeft: 8,
+  },
+  mapScrollView: {
+    flex: 1,
+  },
+  serviceToggle: {
+    flexDirection: "row",
+    marginHorizontal: 20,
     marginVertical: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 4,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  toggleButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  activeToggle: {
+    backgroundColor: "#26A69A",
+  },
+  toggleText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#26A69A",
+    marginLeft: 8,
+  },
+  activeToggleText: {
+    color: "#FFFFFF",
+  },
+  viewToggle: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    marginVertical: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 4,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  viewToggleButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  activeViewToggle: {
+    backgroundColor: "#26A69A",
+  },
+  viewToggleText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#26A69A",
+    marginLeft: 8,
+  },
+  activeViewToggleText: {
+    color: "#FFFFFF",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#26A69A",
+    marginTop: 16,
+    fontWeight: "500",
+  },
+  servicesSection: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#263238",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  serviceCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    borderLeftWidth: 4,
+    borderLeftColor: "#26A69A",
+  },
+  serviceHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  serviceInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  serviceName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#263238",
+    marginBottom: 4,
+  },
+  serviceAddress: {
+    fontSize: 14,
+    color: "#546E7A",
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  distanceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  distanceText: {
+    fontSize: 13,
+    color: "#757575",
+    marginLeft: 4,
+    fontWeight: "500",
+  },
+  navigateButton: {
+    backgroundColor: "#26A69A",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: "#26A69A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  navigateButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 6,
+  },
+  noServicesContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  noServicesText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#546E7A",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  noServicesSubtext: {
+    fontSize: 14,
+    color: "#78909C",
+    marginTop: 8,
+    textAlign: "center",
   },
   map: { width: width, height: height * 0.6 },
   mapPlaceholder: {
-    backgroundColor: "#f8f9fa",
-    borderRadius: 12,
-    padding: 20,
-    margin: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    margin: 12,
     borderWidth: 2,
-    borderColor: "#e9ecef",
+    borderColor: "#E0E0E0",
     borderStyle: "dashed",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   mapTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#495057",
+    color: "#263238",
     marginBottom: 8,
   },
   mapSubtitle: {
-    fontSize: 14,
-    color: "#6c757d",
+    fontSize: 16,
+    color: "#546E7A",
     marginBottom: 15,
     textAlign: "center",
   },
@@ -346,35 +735,40 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   servicesTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
-    color: "#343a40",
-    marginBottom: 10,
+    color: "#263238",
+    marginBottom: 12,
     textAlign: "center",
   },
   serviceItem: {
-    backgroundColor: "#ffffff",
-    padding: 12,
-    marginVertical: 4,
-    borderRadius: 8,
-    borderLeftWidth: 4,
-    borderLeftColor: "#007bff",
+    backgroundColor: "#FFFFFF",
+    padding: 18,
+    marginVertical: 8,
+    borderRadius: 16,
+    borderLeftWidth: 5,
+    borderLeftColor: "#FF7043",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
   },
   serviceName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "bold",
-    color: "#212529",
+    color: "#263238",
   },
   serviceAddress: {
-    fontSize: 12,
-    color: "#6c757d",
-    marginTop: 2,
+    fontSize: 14,
+    color: "#546E7A",
+    marginTop: 4,
   },
   serviceDistance: {
-    fontSize: 12,
-    color: "#28a745",
+    fontSize: 14,
+    color: "#2E7D32",
     fontWeight: "600",
-    marginTop: 2,
+    marginTop: 4,
   },
   moreServices: {
     fontSize: 12,
@@ -384,43 +778,53 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   openMapButton: {
-    backgroundColor: "#007bff",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: "#3F51B5",
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    borderRadius: 14,
+    elevation: 6,
+    shadowColor: "#3F51B5",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   openMapButtonText: {
-    color: "#ffffff",
+    color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 16,
   },
   listItem: { padding: 10, borderBottomWidth: 1, backgroundColor: "white" },
   listItemTitle: { fontWeight: "bold", color: "#333" },
   navigateButton: {
-    backgroundColor: "#007bff",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
-    marginTop: 8,
+    backgroundColor: "#3F51B5",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 10,
     alignItems: "center",
+    shadowColor: "#3F51B5",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   navigateButtonText: {
-    color: "#ffffff",
+    color: "#FFFFFF",
     fontWeight: "bold",
     fontSize: 14,
   },
   mapItemNavigateButton: {
-    backgroundColor: "#28a745",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 5,
-    marginTop: 6,
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginTop: 8,
     alignItems: "center",
+    shadowColor: "#4CAF50",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
   mapItemNavigateText: {
     color: "#ffffff",
@@ -443,18 +847,28 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   callButton: {
-    marginTop: 5,
-    backgroundColor: "#ff4d4d",
-    padding: 10,
-    borderRadius: 8,
+    marginTop: 8,
+    backgroundColor: "#E53935",
+    padding: 14,
+    borderRadius: 12,
     alignItems: "center",
+    shadowColor: "#E53935",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  callText: { color: "#fff", fontWeight: "bold" },
+  callText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
   sosButton: {
-    marginTop: 5,
-    backgroundColor: "#ff0000",
-    padding: 10,
-    borderRadius: 8,
+    marginTop: 8,
+    backgroundColor: "#D32F2F",
+    padding: 14,
+    borderRadius: 12,
     alignItems: "center",
+    shadowColor: "#D32F2F",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
 });

@@ -1,12 +1,25 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, StatusBar, ScrollView } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  StatusBar,
+  ScrollView,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { db } from "../../constants/firebase";
 import { collection, addDoc, Timestamp } from "firebase/firestore";
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
+import { getCurrentLanguage } from "../../constants/i18n";
 
 const UserRegister = () => {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const { campId } = useLocalSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -14,13 +27,27 @@ const UserRegister = () => {
   const [address, setAddress] = useState("");
   const [age, setAge] = useState("");
 
+  // Load language preference on component mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const storedLang = await AsyncStorage.getItem("language");
+      if (storedLang) {
+        i18n.changeLanguage(storedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
+
   const handleRegister = async () => {
     if (!name || !email || !phone) {
-      Alert.alert("Error", "Please fill all required fields");
+      Alert.alert(t("error"), t("all_fields_required"));
       return;
     }
 
     try {
+      // Get current language for storing with registration data
+      const currentLanguage = getCurrentLanguage();
+
       await addDoc(collection(db, "registrations"), {
         campId,
         name,
@@ -28,49 +55,63 @@ const UserRegister = () => {
         phone,
         address,
         age: age ? parseInt(age) : null,
+        language: currentLanguage, // Store the language used for registration
         createdAt: Timestamp.fromDate(new Date()),
       });
-      Alert.alert("Success", "Registration successful");
+      Alert.alert(t("success"), t("registration_successful"));
       router.back();
     } catch (error) {
       console.error("Error registering:", error);
-      Alert.alert("Error", "Failed to register");
+      Alert.alert(t("error"), t("registration_failed"));
     }
   };
 
   return (
     <View style={styles.container}>
       <StatusBar backgroundColor="#F5F5F5" barStyle="dark-content" />
-      
+
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={() => router.back()}
         >
           <Feather name="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Register for Health Camp</Text>
+        <Text style={styles.headerTitle}>{t("register_for_camp")}</Text>
       </View>
-      
-      <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+
+      <ScrollView
+        style={styles.formContainer}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.formCard}>
-          <Text style={styles.formSubtitle}>Please fill in your details to register</Text>
-          
-          <Text style={styles.inputLabel}>Full Name *</Text>
+          <Text style={styles.formSubtitle}>{t("all_fields_required")}</Text>
+
+          <Text style={styles.inputLabel}>{t("full_name")} *</Text>
           <View style={styles.inputContainer}>
-            <Feather name="user" size={18} color="#777" style={styles.inputIcon} />
+            <Feather
+              name="user"
+              size={18}
+              color="#777"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
-              placeholder="Enter your full name"
+              placeholder={t("enter_full_name")}
               placeholderTextColor="#888"
               value={name}
               onChangeText={setName}
             />
           </View>
-          
+
           <Text style={styles.inputLabel}>Email Address *</Text>
           <View style={styles.inputContainer}>
-            <Feather name="mail" size={18} color="#777" style={styles.inputIcon} />
+            <Feather
+              name="mail"
+              size={18}
+              color="#777"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Enter your email address"
@@ -81,10 +122,15 @@ const UserRegister = () => {
               autoCapitalize="none"
             />
           </View>
-          
+
           <Text style={styles.inputLabel}>Phone Number *</Text>
           <View style={styles.inputContainer}>
-            <Feather name="phone" size={18} color="#777" style={styles.inputIcon} />
+            <Feather
+              name="phone"
+              size={18}
+              color="#777"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Enter your phone number"
@@ -94,10 +140,15 @@ const UserRegister = () => {
               keyboardType="phone-pad"
             />
           </View>
-          
+
           <Text style={styles.inputLabel}>Address (Optional)</Text>
           <View style={styles.inputContainer}>
-            <Feather name="map-pin" size={18} color="#777" style={styles.inputIcon} />
+            <Feather
+              name="map-pin"
+              size={18}
+              color="#777"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Enter your address"
@@ -108,10 +159,15 @@ const UserRegister = () => {
               numberOfLines={2}
             />
           </View>
-          
+
           <Text style={styles.inputLabel}>Age (Optional)</Text>
           <View style={styles.inputContainer}>
-            <Feather name="calendar" size={18} color="#777" style={styles.inputIcon} />
+            <Feather
+              name="calendar"
+              size={18}
+              color="#777"
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Enter your age"
@@ -121,21 +177,19 @@ const UserRegister = () => {
               keyboardType="numeric"
             />
           </View>
-          
-          <Text style={styles.noteText}>
-            Fields marked with * are required
-          </Text>
-          
-          <TouchableOpacity 
-            style={styles.registerButton} 
+
+          <Text style={styles.noteText}>Fields marked with * are required</Text>
+
+          <TouchableOpacity
+            style={styles.registerButton}
             onPress={handleRegister}
           >
             <Feather name="check-circle" size={18} color="#FFF" />
             <Text style={styles.registerButtonText}>Complete Registration</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.cancelButton} 
+
+          <TouchableOpacity
+            style={styles.cancelButton}
             onPress={() => router.back()}
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>

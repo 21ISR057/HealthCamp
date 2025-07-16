@@ -1,42 +1,127 @@
-import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  StatusBar,
+} from "react-native";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { setDoc, doc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../../constants/firebase";
-
-import { Picker } from "@react-native-picker/picker"; // ✅ Import Picker
-
+import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
-export default function RegisterScreenUser() { 
+import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
+import { getCurrentLanguage } from "../../../constants/i18n";
+import DateTimePicker from "@react-native-community/datetimepicker";
+export default function RegisterScreenUser() {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [gender, setGender] = useState("");
-  const [dob, setDob] = useState("");
+  const [dob, setDob] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [locality, setLocality] = useState(""); // ✅ Set initial state for locality
 
+  // Load language preference on component mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const storedLang = await AsyncStorage.getItem("language");
+      if (storedLang) {
+        i18n.changeLanguage(storedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
+
+  // Date picker handler
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setDob(selectedDate);
+    }
+  };
+
+  // Format date for display
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString();
+  };
+
   const districts = [
-    "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
-    "Dindigul", "Erode", "Kallakurichi", "Kanchipuram", "Kanyakumari", "Karur",
-    "Krishnagiri", "Madurai", "Nagapattinam", "Namakkal", "Nilgiris", "Perambalur",
-    "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga", "Tenkasi",
-    "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli", "Tirupathur",
-    "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore", "Viluppuram", "Virudhunagar"
+    "Ariyalur",
+    "Chengalpattu",
+    "Chennai",
+    "Coimbatore",
+    "Cuddalore",
+    "Dharmapuri",
+    "Dindigul",
+    "Erode",
+    "Kallakurichi",
+    "Kanchipuram",
+    "Kanyakumari",
+    "Karur",
+    "Krishnagiri",
+    "Madurai",
+    "Nagapattinam",
+    "Namakkal",
+    "Nilgiris",
+    "Perambalur",
+    "Pudukkottai",
+    "Ramanathapuram",
+    "Ranipet",
+    "Salem",
+    "Sivaganga",
+    "Tenkasi",
+    "Thanjavur",
+    "Theni",
+    "Thoothukudi",
+    "Tiruchirappalli",
+    "Tirunelveli",
+    "Tirupathur",
+    "Tiruppur",
+    "Tiruvallur",
+    "Tiruvannamalai",
+    "Tiruvarur",
+    "Vellore",
+    "Viluppuram",
+    "Virudhunagar",
   ];
 
   // 🔹 Handle Registration Function
   const handleRegister = async () => {
-    if (!fullName || !email || !password || !phoneNumber || !gender || !dob || !locality) {
-      Alert.alert("Error", "All fields are required!");
+    if (
+      !fullName ||
+      !email ||
+      !password ||
+      !phoneNumber ||
+      !gender ||
+      !dob ||
+      !locality
+    ) {
+      Alert.alert(t("error"), t("all_fields_required"));
       return;
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
+
+      // Get current language preference
+      const currentLanguage = getCurrentLanguage();
 
       const userData = {
         uid: user.uid,
@@ -44,49 +129,191 @@ export default function RegisterScreenUser() {
         email,
         phoneNumber,
         gender,
-        dob,
+        dob: dob.toISOString().split("T")[0], // Format date as YYYY-MM-DD
         locality,
+        preferredLanguage: currentLanguage, // Store language preference
         createdAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, "users", user.uid), userData);
 
-      Alert.alert("Success", "Registration Successful!");
+      Alert.alert(t("success"), t("registration_successful"));
       router.push("/Screens/auth/LoginScreen");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Registration error:", error.message);
-      Alert.alert("Error", "Registration failed. Try again.");
+      Alert.alert(t("error"), t("registration_failed"));
     }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Register</Text>
+      <StatusBar backgroundColor="#26A69A" barStyle="light-content" />
 
-      <TextInput style={styles.input} placeholder="Full Name" value={fullName} onChangeText={setFullName} />
-      <TextInput style={styles.input} placeholder="Email" keyboardType="email-address" value={email} onChangeText={setEmail} />
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
-      <TextInput style={styles.input} placeholder="Phone Number" keyboardType="phone-pad" value={phoneNumber} onChangeText={setPhoneNumber} />
-      <TextInput style={styles.input} placeholder="Gender" value={gender} onChangeText={setGender} />
-      <TextInput style={styles.input} placeholder="Date of Birth (YYYY-MM-DD)" value={dob} onChangeText={setDob} />
+      {/* Header */}
+      <LinearGradient colors={["#26A69A", "#00695C"]} style={styles.header}>
+        <MaterialIcons name="person-add" size={64} color="#FFFFFF" />
+        <Text style={styles.appName}>{t("join_mediconnect")}</Text>
+        <Text style={styles.tagline}>{t("create_health_account")}</Text>
+      </LinearGradient>
 
-      {/* 🔹 Locality Dropdown */}
-      <View style={styles.pickerContainer}>
-        <Picker selectedValue={locality} onValueChange={(itemValue) => setLocality(itemValue)}>
-          <Picker.Item label="Select Locality" value="" />
-          {districts.map((district, index) => (
-            <Picker.Item key={index} label={district} value={district} />
-          ))}
-        </Picker>
-      </View>
+      {/* Registration Form */}
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.formContainer}
+      >
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Fill in your details to get started</Text>
 
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
-      </TouchableOpacity>
+        <View style={styles.inputContainer}>
+          <Feather
+            name="user"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("full_name")}
+            placeholderTextColor="#999"
+            value={fullName}
+            onChangeText={setFullName}
+          />
+        </View>
 
-      <TouchableOpacity onPress={() => router.push("/Screens/auth/LoginScreen")}>
-        <Text style={styles.toggleText}>Already registered? Login</Text>
-      </TouchableOpacity>
+        <View style={styles.inputContainer}>
+          <Feather
+            name="mail"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("email")}
+            placeholderTextColor="#999"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Feather
+            name="lock"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("password")}
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Feather
+            name="phone"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("phone_number")}
+            placeholderTextColor="#999"
+            keyboardType="phone-pad"
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="person"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={`${t("gender")} (${t("male")}/${t("female")}/${t(
+              "other"
+            )})`}
+            placeholderTextColor="#999"
+            value={gender}
+            onChangeText={setGender}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Feather
+            name="calendar"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TouchableOpacity
+            style={styles.datePickerButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Text style={styles.datePickerText}>{formatDate(dob)}</Text>
+            <MaterialIcons name="date-range" size={20} color="#26A69A" />
+          </TouchableOpacity>
+        </View>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={dob}
+            mode="date"
+            display="default"
+            onChange={onDateChange}
+            maximumDate={new Date()}
+          />
+        )}
+
+        <View style={styles.pickerContainer}>
+          <MaterialIcons
+            name="location-on"
+            size={20}
+            color="#26A69A"
+            style={styles.pickerIcon}
+          />
+          <Picker
+            selectedValue={locality}
+            onValueChange={(itemValue) => setLocality(itemValue)}
+            style={styles.picker}
+          >
+            <Picker.Item label={t("select_district")} value="" />
+            {districts.map((district, index) => (
+              <Picker.Item key={index} label={district} value={district} />
+            ))}
+          </Picker>
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <LinearGradient
+            colors={["#26A69A", "#00695C"]}
+            style={styles.buttonGradient}
+          >
+            <Text style={styles.buttonText}>{t("create_account")}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.loginLink}
+          onPress={() => router.push("/Screens/auth/LoginScreen")}
+        >
+          <Text style={styles.loginText}>
+            Already have an account?{" "}
+            <Text style={styles.loginTextBold}>Sign In</Text>
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
@@ -95,53 +322,143 @@ export default function RegisterScreenUser() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#F8F9FA",
-    padding: 20,
+  },
+  header: {
+    alignItems: "center",
+    paddingVertical: 50,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  appName: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginTop: 16,
+    letterSpacing: 1,
+  },
+  tagline: {
+    fontSize: 16,
+    color: "#E8EAF6",
+    marginTop: 8,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: "bold",
-    marginBottom: 20,
-    color: "#333",
+    color: "#1A237E",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#546E7A",
+    textAlign: "center",
+    marginBottom: 30,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    width: "90%",
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#CCC",
-    borderRadius: 10,
-    marginBottom: 12,
-    backgroundColor: "#FFF",
+    flex: 1,
+    height: 50,
     fontSize: 16,
+    color: "#1A237E",
   },
   pickerContainer: {
-    width: "90%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#CCC",
-    borderRadius: 10,
-    marginBottom: 12,
-    backgroundColor: "#FFF",
+    borderColor: "#E0E0E0",
+  },
+  pickerIcon: {
+    marginRight: 12,
+  },
+  picker: {
+    flex: 1,
+    height: 50,
+    color: "#1A237E",
+  },
+  datePickerButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: "#333",
+    flex: 1,
   },
   button: {
-    backgroundColor: "#007BFF",
-    padding: 14,
-    width: "90%",
+    marginTop: 24,
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#26A69A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  buttonGradient: {
+    paddingVertical: 16,
     alignItems: "center",
-    borderRadius: 10,
-    marginVertical: 10,
+    justifyContent: "center",
   },
   buttonText: {
+    color: "#FFFFFF",
     fontSize: 18,
-    color: "#FFF",
     fontWeight: "bold",
+    letterSpacing: 0.5,
   },
-  toggleText: {
+  loginLink: {
+    alignItems: "center",
+    marginTop: 24,
+  },
+  loginText: {
     fontSize: 16,
-    color: "#007BFF",
-    marginTop: 10,
+    color: "#546E7A",
+  },
+  loginTextBold: {
+    fontWeight: "bold",
+    color: "#26A69A",
   },
 });
-
-

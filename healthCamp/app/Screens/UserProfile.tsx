@@ -6,10 +6,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   TextInput,
-  Button,
   Alert,
   ScrollView,
+  TouchableOpacity,
+  StatusBar,
 } from "react-native";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { getAuth } from "firebase/auth";
 import {
   getFirestore,
@@ -69,46 +72,118 @@ const ProfileSection = ({
   setEditMode,
 }: ProfileSectionProps) => (
   <View style={styles.profileContainer}>
-    <Image
-      source={{
-        uri:
-          userData.profileImage ||
-          "https://www.w3schools.com/howto/img_avatar.png",
-      }}
-      style={styles.profileImage}
-    />
-    <Button
-      title={editMode ? "Cancel" : "Edit Details"}
-      onPress={() => setEditMode(!editMode)}
-    />
-
-    {Object.entries(userData).map(([key, value]) => (
-      <View key={key} style={styles.row}>
-        <Text style={styles.label}>
-          {key.replace(/([A-Z])/g, " $1").trim()}:
-        </Text>
-        {editMode ? (
-          <TextInput
-            style={styles.input}
-            value={String(updatedData[key as keyof UserData] || "")} // Convert to string
-            onChangeText={(text) =>
-              setUpdatedData({
-                ...(updatedData || {}),
-                [key]: text,
-              })
-            }
-          />
-        ) : (
-          <Text style={styles.userInfo}>{String(value)}</Text>
-        )}
+    {/* Profile Header */}
+    <LinearGradient
+      colors={["#26A69A", "#00695C"]}
+      style={styles.profileHeader}
+    >
+      <View style={styles.profileImageContainer}>
+        <Image
+          source={{
+            uri:
+              userData.profileImage ||
+              "https://www.w3schools.com/howto/img_avatar.png",
+          }}
+          style={styles.profileImage}
+        />
+        <View style={styles.profileImageOverlay}>
+          <Feather name="camera" size={20} color="#FFFFFF" />
+        </View>
       </View>
-    ))}
+      <Text style={styles.profileName}>{userData.fullName}</Text>
+      <Text style={styles.profileEmail}>{userData.email}</Text>
+    </LinearGradient>
+
+    {/* Edit Button */}
+    <TouchableOpacity
+      style={[styles.editButton, editMode && styles.cancelButton]}
+      onPress={() => setEditMode(!editMode)}
+    >
+      <Feather
+        name={editMode ? "x" : "edit-3"}
+        size={16}
+        color="#FFFFFF"
+        style={styles.buttonIcon}
+      />
+      <Text style={styles.editButtonText}>
+        {editMode ? "Cancel" : "Edit Profile"}
+      </Text>
+    </TouchableOpacity>
+
+    {/* Profile Details */}
+    <View style={styles.detailsContainer}>
+      {Object.entries(userData)
+        .filter(
+          ([key]) => !["profileImage", "uid", "email", "fullName"].includes(key)
+        )
+        .map(([key, value]) => (
+          <View key={key} style={styles.detailRow}>
+            <View style={styles.detailLabelContainer}>
+              <MaterialIcons
+                name={getIconForField(key)}
+                size={20}
+                color="#00695C"
+              />
+              <Text style={styles.detailLabel}>{formatFieldName(key)}</Text>
+            </View>
+            {editMode ? (
+              <TextInput
+                style={styles.detailInput}
+                value={String(
+                  updatedData[key as keyof UserData] || value || ""
+                )}
+                onChangeText={(text) =>
+                  setUpdatedData({
+                    ...(updatedData || {}),
+                    [key]: text,
+                  })
+                }
+                placeholder={`Enter ${formatFieldName(key)}`}
+                placeholderTextColor="#999"
+              />
+            ) : (
+              <Text style={styles.detailValue}>
+                {String(value || "Not provided")}
+              </Text>
+            )}
+          </View>
+        ))}
+    </View>
 
     {editMode && (
-      <Button title="Save Changes" onPress={handleUpdate} color="green" />
+      <TouchableOpacity style={styles.saveButton} onPress={handleUpdate}>
+        <Feather
+          name="check"
+          size={16}
+          color="#FFFFFF"
+          style={styles.buttonIcon}
+        />
+        <Text style={styles.saveButtonText}>Save Changes</Text>
+      </TouchableOpacity>
     )}
   </View>
 );
+
+// Helper functions
+const getIconForField = (fieldName: string) => {
+  const iconMap: { [key: string]: string } = {
+    phoneNumber: "phone",
+    gender: "person",
+    dob: "cake",
+    locality: "location-on",
+  };
+  return iconMap[fieldName] || "info";
+};
+
+const formatFieldName = (fieldName: string) => {
+  const nameMap: { [key: string]: string } = {
+    phoneNumber: "Phone Number",
+    dob: "Date of Birth",
+    locality: "Locality",
+    gender: "Gender",
+  };
+  return nameMap[fieldName] || fieldName.replace(/([A-Z])/g, " $1").trim();
+};
 
 const CampSection = ({
   camps,
@@ -116,21 +191,52 @@ const CampSection = ({
   showStatus = false,
 }: CampSectionProps) => (
   <View style={styles.sectionContainer}>
-    <Text style={styles.sectionTitle}>{title}</Text>
+    <View style={styles.sectionHeader}>
+      <MaterialIcons
+        name="event"
+        size={24}
+        color="#00695C"
+        style={styles.sectionIcon}
+      />
+      <Text style={styles.sectionTitle}>{title}</Text>
+    </View>
     {camps.length > 0 ? (
       camps.map((camp) => (
-        <View key={camp.id} style={styles.campItem}>
-          <Text style={styles.campName}>{camp.healthCampName}</Text>
-          <Text style={styles.campDate}>Date: {camp.date}</Text>
-          {showStatus && (
-            <Text style={styles.campStatus}>
-              Status: {camp.verified ? "Verified" : "Not Verified"}
-            </Text>
-          )}
+        <View key={camp.id} style={styles.campCard}>
+          <View style={styles.campHeader}>
+            <Text style={styles.campName}>{camp.healthCampName}</Text>
+            {showStatus && (
+              <View
+                style={[
+                  styles.statusBadge,
+                  camp.verified ? styles.verifiedBadge : styles.pendingBadge,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    camp.verified ? styles.verifiedText : styles.pendingText,
+                  ]}
+                >
+                  {camp.verified ? "Verified" : "Pending"}
+                </Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.campDetails}>
+            <Feather name="calendar" size={16} color="#546E7A" />
+            <Text style={styles.campDate}>{camp.date}</Text>
+          </View>
         </View>
       ))
     ) : (
-      <Text style={styles.noCampsText}>No camps available.</Text>
+      <View style={styles.noCampsContainer}>
+        <MaterialIcons name="event-busy" size={48} color="#CFD8DC" />
+        <Text style={styles.noCampsText}>No camps available</Text>
+        <Text style={styles.noCampsSubtext}>
+          Register for health camps to see them here
+        </Text>
+      </View>
     )}
   </View>
 );
@@ -226,34 +332,56 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />
+      <View style={styles.loadingContainer}>
+        <StatusBar backgroundColor="#00695C" barStyle="light-content" />
+        <ActivityIndicator size="large" color="#00695C" />
+        <Text style={styles.loadingText}>Loading your profile...</Text>
+      </View>
     );
   }
 
   if (error) {
-    return <Text style={styles.errorText}>{error}</Text>;
+    return (
+      <View style={styles.errorContainer}>
+        <StatusBar backgroundColor="#00695C" barStyle="light-content" />
+        <MaterialIcons name="error-outline" size={64} color="#E53935" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => window.location.reload()}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {userData && (
-        <ProfileSection
-          userData={userData}
-          editMode={editMode}
-          updatedData={updatedData}
-          setUpdatedData={setUpdatedData}
-          handleUpdate={handleUpdate}
-          setEditMode={setEditMode}
-        />
-      )}
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#00695C" barStyle="light-content" />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {userData && (
+          <ProfileSection
+            userData={userData}
+            editMode={editMode}
+            updatedData={updatedData}
+            setUpdatedData={setUpdatedData}
+            handleUpdate={handleUpdate}
+            setEditMode={setEditMode}
+          />
+        )}
 
-      <CampSection
-        camps={registeredCamps}
-        title="My Registered Camps"
-        showStatus
-      />
-      <CampSection camps={verifiedCamps} title="Verified Camps" />
-    </ScrollView>
+        <CampSection
+          camps={registeredCamps}
+          title="My Registered Camps"
+          showStatus
+        />
+        <CampSection camps={verifiedCamps} title="Verified Camps" />
+      </ScrollView>
+    </View>
   );
 };
 
@@ -262,99 +390,261 @@ export default UserProfile;
 // Styles
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    backgroundColor: "#F8F9FA",
+    flex: 1,
+    backgroundColor: "#FAFAFA",
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FAFAFA",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#546E7A",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FAFAFA",
     padding: 20,
   },
-  profileContainer: {
-    alignItems: "center",
+  errorText: {
+    fontSize: 18,
+    color: "#E53935",
+    textAlign: "center",
+    marginTop: 16,
     marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: "#00695C",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  profileContainer: {
+    marginBottom: 24,
+  },
+  profileHeader: {
+    alignItems: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  profileImageContainer: {
+    position: "relative",
+    marginBottom: 16,
   },
   profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    marginBottom: 15,
+    borderWidth: 4,
+    borderColor: "#FFFFFF",
   },
-  row: {
-    width: "100%",
+  profileImageOverlay: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 20,
+    padding: 8,
+  },
+  profileName: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 4,
+  },
+  profileEmail: {
+    fontSize: 16,
+    color: "#E0F2F1",
+  },
+  editButton: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    padding: 10,
-    marginVertical: 5,
-    borderRadius: 5,
+    backgroundColor: "#1976D2",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    marginHorizontal: 20,
+    marginTop: -20,
+    shadowColor: "#1976D2",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  cancelButton: {
+    backgroundColor: "#E53935",
+    shadowColor: "#E53935",
+  },
+  editButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  detailsContainer: {
+    margin: 20,
+  },
+  detailRow: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     elevation: 2,
   },
-  label: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  userInfo: {
-    fontSize: 16,
-    color: "#333",
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 8,
-    flex: 1,
-  },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
+  detailLabelContainer: {
+    flexDirection: "row",
     alignItems: "center",
+    marginBottom: 8,
   },
-  errorText: {
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#00695C",
+    marginLeft: 8,
+  },
+  detailValue: {
     fontSize: 16,
-    color: "red",
-    textAlign: "center",
-    marginTop: 20,
+    color: "#263238",
+    lineHeight: 24,
+  },
+  detailInput: {
+    fontSize: 16,
+    color: "#263238",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 8,
+    padding: 12,
+    backgroundColor: "#F9F9F9",
+  },
+  saveButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2E7D32",
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginHorizontal: 20,
+    shadowColor: "#2E7D32",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  saveButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
   },
   sectionContainer: {
-    marginBottom: 20,
+    marginHorizontal: 20,
+    marginBottom: 24,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  sectionIcon: {
+    marginRight: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    color: "#2E7D32",
-    marginBottom: 10,
+    color: "#263238",
   },
-  campItem: {
-    width: "100%",
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 5,
-    marginVertical: 5,
+  campCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 4,
+    borderLeftColor: "#00695C",
+  },
+  campHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
   },
   campName: {
     fontSize: 16,
     fontWeight: "bold",
-    color: "#2E7D32",
+    color: "#263238",
+    flex: 1,
+    marginRight: 8,
+  },
+  campDetails: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   campDate: {
     fontSize: 14,
-    color: "#333",
+    color: "#546E7A",
+    marginLeft: 6,
   },
-  campStatus: {
-    fontSize: 14,
-    color: "#666",
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  verifiedBadge: {
+    backgroundColor: "#E8F5E9",
+  },
+  pendingBadge: {
+    backgroundColor: "#FFF3E0",
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  verifiedText: {
+    color: "#2E7D32",
+  },
+  pendingText: {
+    color: "#F57C00",
+  },
+  noCampsContainer: {
+    alignItems: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
   noCampsText: {
-    fontSize: 14,
-    color: "#666",
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#546E7A",
+    marginTop: 16,
     textAlign: "center",
-    marginTop: 10,
+  },
+  noCampsSubtext: {
+    fontSize: 14,
+    color: "#78909C",
+    marginTop: 8,
+    textAlign: "center",
   },
 });

@@ -26,6 +26,8 @@ import { db, auth } from "../../constants/firebase";
 import { WebView } from "react-native-webview";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Navbar from "../../components/Navbar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 
 interface HealthCamp {
   id: string;
@@ -51,10 +53,22 @@ interface User {
 
 const HomeScreen = () => {
   const router = useRouter();
+  const { t, i18n } = useTranslation();
   const [camps, setCamps] = useState<HealthCamp[]>([]);
   const [filteredCamps, setFilteredCamps] = useState<HealthCamp[]>([]);
   const [expandedCampId, setExpandedCampId] = useState<string | null>(null);
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
+
+  // Load language preference on component mount
+  useEffect(() => {
+    const loadLanguage = async () => {
+      const storedLang = await AsyncStorage.getItem("language");
+      if (storedLang) {
+        i18n.changeLanguage(storedLang);
+      }
+    };
+    loadLanguage();
+  }, []);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
@@ -508,24 +522,36 @@ const HomeScreen = () => {
                 {expandedCampId === item.id ? "View Less" : "View More"}
               </Text>
             </TouchableOpacity>
+          </View>
 
-            <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.websiteButton}
-                onPress={() => handleWebsiteLink(item.registrationUrl)}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={styles.websiteButton}
+              onPress={() => handleWebsiteLink(item.registrationUrl)}
+            >
+              <Feather name="external-link" size={16} color="#FFF" />
+              <Text
+                style={styles.buttonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
-                <Feather name="external-link" size={16} color="#FFF" />
-                <Text style={styles.buttonText}>Website</Text>
-              </TouchableOpacity>
+                Website
+              </Text>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.registerButton}
-                onPress={() => handleRegister(item.id)}
+            <TouchableOpacity
+              style={styles.registerButton}
+              onPress={() => handleRegister(item.id)}
+            >
+              <Feather name="user-plus" size={16} color="#FFF" />
+              <Text
+                style={styles.buttonText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
               >
-                <Feather name="user-plus" size={16} color="#FFF" />
-                <Text style={styles.buttonText}>Register</Text>
-              </TouchableOpacity>
-            </View>
+                {t("register")}
+              </Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -534,12 +560,12 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <StatusBar backgroundColor="#F5F5F5" barStyle="dark-content" />
+      <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
 
       <Navbar />
 
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Health Camps</Text>
+        <Text style={styles.headerTitle}>{t("health_camps")}</Text>
 
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowFilterModal(true)}>
@@ -642,7 +668,7 @@ const HomeScreen = () => {
           ))}
 
           <TouchableOpacity style={styles.clearChip} onPress={clearFilters}>
-            <Text style={styles.clearChipText}>Clear All</Text>
+            <Text style={styles.clearChipText}>{t("clear_all")}</Text>
           </TouchableOpacity>
         </View>
       ) : null}
@@ -658,8 +684,8 @@ const HomeScreen = () => {
       ) : (
         <View style={styles.emptyContainer}>
           <Feather name="calendar" size={60} color="#CCC" />
-          <Text style={styles.emptyText}>No health camps available</Text>
-          <Text style={styles.emptySubtext}>Try adjusting your filters</Text>
+          <Text style={styles.emptyText}>{t("no_health_camps")}</Text>
+          <Text style={styles.emptySubtext}>{t("try_adjusting_filters")}</Text>
         </View>
       )}
 
@@ -943,7 +969,7 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#F8F9FA",
   },
   header: {
     flexDirection: "row",
@@ -951,15 +977,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 8,
-    backgroundColor: "#FFF",
+    paddingBottom: 12,
+    backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#EFEFEF",
+    borderBottomColor: "#E0E0E0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#333",
+    color: "#1A237E",
+    letterSpacing: 0.5,
   },
   headerActions: {
     flexDirection: "row",
@@ -981,22 +1013,25 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFF",
+    backgroundColor: "#FFFFFF",
     margin: 16,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
   },
   searchInput: {
     flex: 1,
     marginLeft: 8,
     fontSize: 16,
-    color: "#333",
+    color: "#1A237E",
+    fontWeight: "400",
   },
   sortContainer: {
     flexDirection: "row",
@@ -1010,21 +1045,26 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   sortOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
     marginRight: 8,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: "#E8EAF6",
+    borderWidth: 1,
+    borderColor: "#C5CAE9",
   },
   activeSortOption: {
     backgroundColor: "#2196F3",
+    borderColor: "#2196F3",
   },
   sortOptionText: {
     fontSize: 13,
-    color: "#555",
+    color: "#546E7A",
+    fontWeight: "500",
   },
   activeSortOptionText: {
-    color: "#FFF",
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   filterChipsContainer: {
     flexDirection: "row",
@@ -1063,15 +1103,17 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   card: {
-    backgroundColor: "#FFF",
-    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
     overflow: "hidden",
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
   },
   cardImage: {
     width: "100%",
@@ -1133,23 +1175,28 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   mapButton: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#26A69A",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 12,
     marginBottom: 16,
+    shadowColor: "#26A69A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   buttonText: {
     color: "#FFF",
     fontWeight: "500",
-    marginLeft: 8,
+    marginLeft: 6,
+    fontSize: 13,
+    flexShrink: 1,
   },
   cardActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     marginTop: 16,
     paddingTop: 16,
@@ -1160,30 +1207,48 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   actionButtonText: {
-    color: "#2196F3",
+    color: "#26A69A",
     fontWeight: "500",
   },
   actionButtons: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 12,
+    paddingHorizontal: 0,
   },
   websiteButton: {
-    backgroundColor: "#607D8B",
+    flex: 1,
+    backgroundColor: "#FF7043",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
-    marginRight: 8,
+    marginRight: 6,
+    shadowColor: "#FF7043",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    minHeight: 40,
   },
   registerButton: {
-    backgroundColor: "#4CAF50",
+    flex: 1,
+    backgroundColor: "#2196F3",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
+    marginLeft: 6,
+    shadowColor: "#2196F3",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    minHeight: 40,
   },
   modalOverlay: {
     flex: 1,
@@ -1273,7 +1338,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   selectedLocation: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#26A69A",
   },
   locationOptionText: {
     fontSize: 14,
@@ -1301,7 +1366,7 @@ const styles = StyleSheet.create({
   },
   applyFiltersButton: {
     flex: 1,
-    backgroundColor: "#2196F3",
+    backgroundColor: "#26A69A",
     paddingVertical: 12,
     borderRadius: 8,
     alignItems: "center",

@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  StatusBar,
+  SafeAreaView,
+  ScrollView,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -13,10 +16,15 @@ import { auth, db } from "../../../constants/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { useRouter } from "expo-router";
+import { useTranslation } from "react-i18next";
+import { getCurrentLanguage } from "../../../constants/i18n";
+import { LinearGradient } from "expo-linear-gradient";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function Register() {
+  const { t, i18n } = useTranslation();
   const [role, setRole] = useState<string | null>(null); // Role from previous screen
-  const [subRole, setSubRole] = useState("ngo_admin"); // Default sub-role
+  const [subRole, setSubRole] = useState(""); // Default sub-role
   const [name, setName] = useState("");
   const [uniqueId, setUniqueId] = useState("");
   const [email, setEmail] = useState("");
@@ -34,6 +42,12 @@ export default function Register() {
         } else {
           console.warn("No role found in AsyncStorage");
         }
+
+        // Load language preference
+        const storedLang = await AsyncStorage.getItem("language");
+        if (storedLang) {
+          i18n.changeLanguage(storedLang);
+        }
       } catch (error) {
         console.error("Error fetching role:", error);
       }
@@ -48,8 +62,15 @@ export default function Register() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const user = userCredential.user;
+
+      // Get current language preference
+      const currentLanguage = getCurrentLanguage();
 
       let userData = {
         uid: user.uid,
@@ -58,6 +79,7 @@ export default function Register() {
         email,
         role: role,
         subRole: role, // This was incorrectly set; now properly using subRole
+        preferredLanguage: currentLanguage, // Store language preference
         createdAt: serverTimestamp(),
       };
 
@@ -81,61 +103,138 @@ export default function Register() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Admin Registration</Text>
+      <StatusBar backgroundColor="#26A69A" barStyle="light-content" />
 
-      {role === "admin" && (
-        <>
-          <Text style={styles.label}>Select Admin Role</Text>
-          <Picker 
-            selectedValue={subRole} 
-            onValueChange={(itemValue) => setSubRole(itemValue)} 
-            style={styles.picker}
+      {/* Header */}
+      <LinearGradient colors={["#26A69A", "#00695C"]} style={styles.header}>
+        <MaterialIcons name="admin-panel-settings" size={64} color="#FFFFFF" />
+        <Text style={styles.appName}>{t("admin_registration")}</Text>
+        <Text style={styles.tagline}>Join mediconnect Admin Portal</Text>
+      </LinearGradient>
+
+      {/* Registration Form */}
+      <ScrollView
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.formContainer}
+      >
+        <Text style={styles.title}>Create Admin Account</Text>
+        <Text style={styles.subtitle}>Fill in your details to get started</Text>
+
+        {role === "admin" && (
+          <View style={styles.inputContainer}>
+            <MaterialIcons
+              name="admin-panel-settings"
+              size={20}
+              color="#26A69A"
+              style={styles.inputIcon}
+            />
+            <View style={styles.pickerWrapper}>
+              <Picker
+                selectedValue={subRole}
+                onValueChange={(itemValue) => setSubRole(itemValue)}
+                style={styles.picker}
+                prompt={t("select_admin_role")}
+              >
+                <Picker.Item label={t("ngo_admin")} value="ngo_admin" />
+                <Picker.Item
+                  label={t("health_student")}
+                  value="health_student"
+                />
+              </Picker>
+            </View>
+          </View>
+        )}
+
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="person"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("full_name")}
+            placeholderTextColor="#999"
+            value={name}
+            onChangeText={setName}
+          />
+        </View>
+
+        {role === "admin" && (
+          <View style={styles.inputContainer}>
+            <MaterialIcons
+              name="badge"
+              size={20}
+              color="#26A69A"
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder={
+                subRole === "ngo_admin" ? t("ngo_unique_id") : t("student_id")
+              }
+              placeholderTextColor="#999"
+              value={uniqueId}
+              onChangeText={setUniqueId}
+            />
+          </View>
+        )}
+
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="email"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("email")}
+            placeholderTextColor="#999"
+            keyboardType="email-address"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <MaterialIcons
+            name="lock"
+            size={20}
+            color="#26A69A"
+            style={styles.inputIcon}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder={t("password")}
+            placeholderTextColor="#999"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+        </View>
+
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <LinearGradient
+            colors={["#26A69A", "#00695C"]}
+            style={styles.buttonGradient}
           >
-            <Picker.Item label="NGO Admin" value="ngo_admin" />
-            <Picker.Item label="Health Student" value="health_student" />
-          </Picker>
-        </>
-      )}
+            <Text style={styles.buttonText}>{t("register")}</Text>
+          </LinearGradient>
+        </TouchableOpacity>
 
-      <TextInput 
-        style={styles.input} 
-        placeholder="Full Name" 
-        value={name} 
-        onChangeText={setName} 
-      />
-
-      {role === "admin" && (
-        <TextInput
-          style={styles.input}
-          placeholder={subRole === "ngo_admin" ? "NGO Unique ID" : "Student ID"}
-          value={uniqueId}
-          onChangeText={setUniqueId}
-        />
-      )}
-
-      <TextInput 
-        style={styles.input} 
-        placeholder="Email" 
-        keyboardType="email-address" 
-        value={email} 
-        onChangeText={setEmail} 
-      />
-
-      <TextInput 
-        style={styles.input} 
-        placeholder="Password" 
-        secureTextEntry 
-        value={password} 
-        onChangeText={setPassword} 
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleRegister}>
-        <Text style={styles.buttonText}>Register</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.push("/Screens/auth/AdminLogin")}>
-        <Text style={styles.toggleText}>Already registered? Login</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.linkContainer}
+          onPress={() => router.push("/Screens/auth/AdminLogin")}
+        >
+          <Text style={styles.linkText}>
+            {t("already_have_account")}{" "}
+            <Text style={styles.linkTextBold}>{t("login")}</Text>
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
     </View>
   );
 }
@@ -144,55 +243,110 @@ export default function Register() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    backgroundColor: "#F5F5F5",
+  },
+  header: {
+    paddingTop: 50,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
     alignItems: "center",
-    padding: 20,
-    backgroundColor: "#f5f5f5",
+  },
+  appName: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginTop: 16,
+    textAlign: "center",
+  },
+  tagline: {
+    fontSize: 16,
+    color: "#E0F2F1",
+    marginTop: 8,
+    textAlign: "center",
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 20,
-    color: "#333",
+    color: "#1A237E",
+    marginBottom: 8,
+    textAlign: "center",
   },
-  label: {
+  subtitle: {
     fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
+    color: "#546E7A",
+    marginBottom: 32,
+    textAlign: "center",
   },
-  picker: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 15,
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  inputIcon: {
+    marginRight: 12,
   },
   input: {
-    width: "100%",
+    flex: 1,
     height: 50,
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
+    fontSize: 16,
+    color: "#333",
+  },
+  pickerWrapper: {
+    flex: 1,
+  },
+  picker: {
+    flex: 1,
+    height: 50,
+    color: "#333",
+    fontSize: 16,
   },
   button: {
-    width: "100%",
-    height: 50,
-    backgroundColor: "#007BFF",
-    justifyContent: "center",
+    marginTop: 24,
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#26A69A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  buttonGradient: {
+    paddingVertical: 16,
     alignItems: "center",
-    borderRadius: 8,
-    marginTop: 10,
+    justifyContent: "center",
   },
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "bold",
+    letterSpacing: 0.5,
   },
-  toggleText: {
-    marginTop: 15,
-    color: "#007BFF",
+  linkContainer: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  linkText: {
+    fontSize: 16,
+    color: "#546E7A",
+  },
+  linkTextBold: {
+    fontWeight: "bold",
+    color: "#26A69A",
   },
 });
